@@ -1,0 +1,39 @@
+@using Microsoft.AspNetCore.Identity
+@using Scholar.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+</head>
+<body class="min-h-screen flex flex-col bg-gray-50 text-gray-900">
+    @if (ViewData["HideNav"] as bool? != true)
+    {
+    <header>
+        <nav class="bg-white border-b border-gray-200">
+
+        </nav>
+    </header>
+    }
+
+    <div class="flex flex-1 w-full">
+        @if (SignInManager.IsSignedIn(User))
+        {
+            <partial name="_Sidebar" />
+        }
+        <main role="main" class="flex-1 min-w-0 px-4 py-6">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="~/lib/flowbite/flowbite.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

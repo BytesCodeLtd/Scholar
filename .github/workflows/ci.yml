@@ -1,0 +1,39 @@
+name: CI
+
+# Run on every pull request that targets the "stage" branch.
+on:
+  pull_request:
+    branches: [stage]
+
+jobs:
+  build:
+    name: Build & Check
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      # Needed so the Tailwind build (MSBuild BuildTailwindCss target) can run.
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Restore .NET dependencies
+        run: dotnet restore
+
+      # Builds C# and, via the csproj target, the Tailwind CSS. Warnings-as-errors
+      # keeps the check strict; drop it if you don't want warnings to fail the build.
+      - name: Build
+        run: dotnet build --no-restore --configuration Release /warnaserror

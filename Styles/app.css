@@ -1,0 +1,22 @@
+@import "tailwindcss";
+@plugin "flowbite/plugin";
+
+/* Files Tailwind scans for class names (so it only ships CSS you actually use). */
+@source "../Views/**/*.cshtml";
+@source "../wwwroot/js/**/*.js";
+@source "../node_modules/flowbite/**/*.js";
+
+/*
+  Your own look — customize design tokens here.
+  These become utilities automatically, e.g. bg-brand-600, text-brand-700.
+*/
+@theme {
+    /* Poppins as the app-wide default font. */
+    --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+    --color-brand-50: #eff6ff;
+    --color-brand-100: #dbeafe;
+    --color-brand-500: #3b82f6;
+    --color-brand-600: #2563eb;
+    --color-brand-700: #1d4ed8;
+}

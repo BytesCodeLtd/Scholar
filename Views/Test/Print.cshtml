@@ -1,0 +1,25 @@
+@using Scholar.Models.ViewModels
+@model PaperDocumentViewModel
+@{
+    ViewData["Title"] = Model.Title;
+    ViewData["PageSubtitle"] = $"{Model.GradeName} · {Model.SubjectName} · {Model.TotalMarks} marks";
+}
+
+<div class="mb-4 flex justify-end print:hidden">
+    <button type="button" onclick="window.print()"
+            class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">Print</button>
+</div>
+
+<div class="rounded-lg bg-gray-100 p-4 sm:p-8 print:bg-white print:p-0">
+    <partial name="_PaperCanvas" model="Model" />
+</div>
+
+@section Scripts {
+    <style>
+        @@media print {
+            header, aside#sidebar { display: none !important; }
+            main { padding: 0 !important; }
+            .paper-sheet { box-shadow: none !important; max-width: none !important; }
+        }
+    </style>
+}

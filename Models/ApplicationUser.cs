@@ -2,13 +2,14 @@ using Microsoft.AspNetCore.Identity;
 
 namespace Scholar.Models
 {
-    /// <summary>
-    /// A teacher or admin account. Extends Identity with app-specific profile fields.
-    /// </summary>
     public class ApplicationUser : IdentityUser
     {
         public string? FullName { get; set; }
 
-        public string? InstituteName { get; set; }
+        public int? InstituteId { get; set; }
+
+        public Institute? Institute { get; set; }
+
+        public ICollection<Question> Questions { get; set; } = new List<Question>();
     }
 }

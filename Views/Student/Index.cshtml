@@ -1,0 +1,29 @@
+@using Scholar.Models.ViewModels
+@model PagedResult<StudentRow>
+@{
+    ViewData["Title"] = "Students";
+
+    TableModelBuilder<StudentRow> builder = TableModel.For(Model)
+        .Title("Students")
+        .WithSearch()
+        .WithCheckbox(show: true, valueProperty: nameof(StudentRow.Id))
+        .WithRowMenu()
+        .WithAction("Add student", "Create", ControllerNames.Student, TableActionStyle.Primary)
+        .Column(TableColumns.Name, nameof(StudentRow.Name), sortable: true)
+        .Column(TableColumns.RollNumber, nameof(StudentRow.RollNumber), sortable: true)
+        .Column(TableColumns.Class, nameof(StudentRow.Class))
+        .Column(TableColumns.Section, nameof(StudentRow.Section));
+
+    // Only a super admin browses across institutes, so only they need the column.
+    if (User.IsInRole(Roles.SuperAdmin))
+    {
+        builder.Column(TableColumns.Institute, nameof(StudentRow.Institute));
+    }
+
+    builder.Column(TableColumns.Guardian, nameof(StudentRow.Guardian))
+           .Column(TableColumns.Phone, nameof(StudentRow.Phone));
+
+    TableModel table = builder.Build();
+}
+
+@await Component.InvokeAsync("DataTable", new { model = table })

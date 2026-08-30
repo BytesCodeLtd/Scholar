@@ -11,10 +11,8 @@
   </Target>
 
   <ItemGroup>
-    <Compile Include="C:\Users\Farhan Jameel\Desktop\Scholar\Scholar\Models\IAuditableEntity.cs" Link="Models\IAuditableEntity.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.102.3" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
@@ -22,10 +20,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Migrations\" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.3" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,28 @@
+@model IEnumerable<Board>
+@{
+    ViewData["Title"] = "Boards";
+}
+
+@if (!Model.Any())
+{
+    <div class="p-4 text-sm text-blue-800 rounded-lg bg-blue-50" role="alert">
+        No boards yet.
+    </div>
+}
+else
+{
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        @foreach (var board in Model)
+        {
+            <a asp-controller="Grade" asp-action="Index" asp-route-boardId="@board.Id"
+               class="flex items-center min-h-32 rounded-lg bg-white border border-gray-200 shadow-sm p-6 hover:shadow-md hover:border-brand-300 transition focus:outline-none focus:ring-4 focus:ring-brand-100">
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center justify-center w-11 h-11 rounded-lg bg-brand-50 text-brand-700 font-semibold">
+                        @(string.IsNullOrWhiteSpace(board.Name) ? "?" : board.Name.Trim()[..1].ToUpper())
+                    </span>
+                    <h2 class="text-lg font-semibold text-gray-900 truncate">@board.Name</h2>
+                </div>
+            </a>
+        }
+    </div>
+}

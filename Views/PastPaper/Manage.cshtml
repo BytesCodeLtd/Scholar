@@ -1,0 +1,110 @@
+@model Scholar.Models.ViewModels.ManagePastPapersViewModel
+@{
+    ViewData["Title"] = "Manage Past Papers";
+    ViewData["PageSubtitle"] = "Upload board past papers for institutes to browse.";
+
+    string labelCls = "block mb-1 text-sm font-medium text-gray-900";
+    string inputCls = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 disabled:opacity-60 disabled:cursor-not-allowed";
+    string errCls = "mt-1 block text-sm text-red-600";
+}
+
+
+@* ---- Upload form ---------------------------------------------------- *@
+<div class="w-full rounded-lg bg-white border border-gray-200 shadow-sm p-6">
+    <h2 class="mb-4 text-lg font-semibold text-gray-900">Add a past paper</h2>
+
+    <form asp-action="Upload" method="post" enctype="multipart/form-data" class="space-y-5">
+        <div asp-validation-summary="ModelOnly" class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div>
+                <label for="up-board" class="@labelCls">Board</label>
+                <select id="up-board" class="@inputCls">
+                    <option value="">Select board</option>
+                    @foreach (var board in Model.Boards)
+                    {
+                        <option value="@board.Id">@board.Name</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="up-grade" class="@labelCls">Grade</label>
+                <select id="up-grade" class="@inputCls" disabled>
+                    <option value="">Select grade</option>
+                </select>
+            </div>
+            <div>
+                <label asp-for="Upload.SubjectId" class="@labelCls">Subject</label>
+                <select asp-for="Upload.SubjectId" class="@inputCls" disabled>
+                    <option value="">Select subject</option>
+                </select>
+                <span asp-validation-for="Upload.SubjectId" class="@errCls"></span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label asp-for="Upload.Title" class="@labelCls"></label>
+                <input asp-for="Upload.Title" class="@inputCls" placeholder="e.g. Computer Lahore Board" />
+                <span asp-validation-for="Upload.Title" class="@errCls"></span>
+            </div>
+            <div>
+                <label asp-for="Upload.Year" class="@labelCls"></label>
+                <input asp-for="Upload.Year" type="number" min="1900" max="2100" class="@inputCls" placeholder="e.g. 2026" />
+                <span asp-validation-for="Upload.Year" class="@errCls"></span>
+            </div>
+            <div>
+                <label asp-for="Upload.File" class="@labelCls"></label>
+                <input asp-for="Upload.File" type="file" accept="application/pdf"
+                       class="@inputCls file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-1 file:text-brand-700 px-8" />
+                <p class="mt-1 text-xs text-gray-500">PDF only. Max 10 MB.</p>
+                <span asp-validation-for="Upload.File" class="@errCls"></span>
+            </div>
+        </div>
+
+        <button type="submit"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:ring-4 focus:ring-brand-100">
+            Upload past paper
+        </button>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var board = document.getElementById('up-board');
+            var grade = document.getElementById('up-grade');
+            var subject = document.getElementById('@Html.IdFor(m => m.Upload.SubjectId)');
+
+            function reset(select, placeholder) {
+                select.innerHTML = '<option value="">' + placeholder + '</option>';
+                select.disabled = true;
+            }
+
+            function fill(select, items, placeholder) {
+                var html = '<option value="">' + placeholder + '</option>';
+                items.forEach(function (i) { html += '<option value="' + i.id + '">' + i.name + '</option>'; });
+                select.innerHTML = html;
+                select.disabled = items.length === 0;
+            }
+
+            board.addEventListener('change', function () {
+                reset(grade, 'Select grade');
+                reset(subject, 'Select subject');
+                if (!board.value) return;
+                fetch('@Url.Action("Grades", "PastPaper")?boardId=' + board.value)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { fill(grade, data, 'Select grade'); });
+            });
+
+            grade.addEventListener('change', function () {
+                reset(subject, 'Select subject');
+                if (!grade.value) return;
+                fetch('@Url.Action("Subjects", "PastPaper")?boardId=' + board.value + '&gradeId=' + grade.value)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { fill(subject, data, 'Select subject'); });
+            });
+        })();
+    </script>
+}

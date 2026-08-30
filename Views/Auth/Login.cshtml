@@ -1,0 +1,54 @@
+@model Scholar.Models.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Sign in";
+    ViewData["HideNav"] = true;
+}
+
+<div class="fixed inset-0 flex items-center justify-center overflow-y-auto p-4 bg-gray-50">
+    <div class="w-full max-w-md rounded-lg bg-white border border-gray-200 p-8 shadow-sm">
+        <h1 class="text-2xl font-bold text-gray-900">Sign in</h1>
+        <p class="mt-1 text-sm text-gray-500">Welcome back. Enter your details to continue.</p>
+
+        <form asp-controller="Auth" asp-action="Login" method="post" class="mt-6 space-y-5">
+            <div asp-validation-summary="ModelOnly"
+                 class="hidden text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3"
+                 data-valmsg-summary="true"></div>
+
+            <div>
+                <label asp-for="Email" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="Email" autocomplete="username"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5"
+                       placeholder="teacher@example.com" />
+                <span asp-validation-for="Email" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="Password" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="Password" autocomplete="current-password"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5"
+                       placeholder="••••••••" />
+                <span asp-validation-for="Password" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div class="flex items-center">
+                <input asp-for="RememberMe" type="checkbox"
+                       class="w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+                <label asp-for="RememberMe" class="ms-2 text-sm text-gray-700"></label>
+            </div>
+
+            <button type="submit"
+                    class="w-full text-white bg-brand-600 hover:bg-brand-700 focus:ring-4 focus:ring-brand-100 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                Sign in
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var summary = document.querySelector('[data-valmsg-summary="true"]');
+        if (summary && summary.querySelector('li')) {
+            summary.classList.remove('hidden');
+        }
+    </script>
+}

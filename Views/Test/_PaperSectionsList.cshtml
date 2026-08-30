@@ -1,0 +1,78 @@
+@using Scholar.Common.Papers
+@using Scholar.Models.ViewModels
+@model PaperSectionsViewModel
+@{
+    var s = Model.Settings;
+    string headingStyle = $"font-size:{s.HeadingFontSize}pt;line-height:{s.LineHeight};color:{s.FontColorHex};{s.FormattingCss(s.HeadingFormatting)}font-family:{s.FontFamilyCss(s.HeaderFontStyle)};";
+    string textStyle = $"font-size:{s.TextFontSize}pt;line-height:{s.LineHeight};color:{s.FontColorHex};{s.FormattingCss(s.TextFormatting)}font-family:{s.FontFamilyCss(s.EnglishTextFontStyle)};";
+}
+
+@if (!Model.Sections.Any())
+{
+    <p class="py-10 text-center text-sm text-gray-400 print:hidden">
+        No sections yet. Use <span class="font-medium">Question's Menu</span> to add questions.
+    </p>
+}
+
+@foreach (var sec in Model.Sections)
+{
+    <section class="paper-section group relative mb-6" data-section-index="@(sec.SectionNumber - 1)">
+        <div class="flex items-baseline justify-between gap-4 @(s.QuestionHeadingBottomBorder ? "border-b border-gray-400 pb-1" : "")"
+             style="@headingStyle">
+            <div>
+                <span>Q@(sec.SectionNumber).</span>
+                @if (!string.IsNullOrWhiteSpace(sec.Instruction))
+                {
+                    <span class="ms-1">@sec.Instruction</span>
+                }
+            </div>
+            <div class="shrink-0 whitespace-nowrap">
+                (@sec.MarksPerQuestion × @sec.Count = @sec.TotalMarks)
+            </div>
+        </div>
+
+        <ol class="mt-2 space-y-2">
+            @for (int i = 0; i < sec.Questions.Count; i++)
+            {
+                var q = sec.Questions[i];
+                int number = sec.StartIndex + i;
+                <li style="@textStyle">
+                    <div class="flex gap-2">
+                        <span class="shrink-0">@Numerals.Format(number, s.NumeralStyle).</span>
+                        <div class="min-w-0 flex-1">
+                            <span>@q.Text</span>
+                            @if (s.ShowConceptualQuestionMark && q.Category == Scholar.Enums.QuestionCategory.Example)
+                            {
+                                <span class="ms-1 text-xs align-super">★</span>
+                            }
+                            @if (s.ShowChapterName && q.Topic?.Chapter is not null)
+                            {
+                                <span class="ms-2 text-xs italic opacity-70">(@q.Topic.Chapter.Name)</span>
+                            }
+
+                            @if (q.Type == Scholar.Enums.QuestionType.Mcq && q.Options.Any())
+                            {
+                                <div class="mt-1 @(s.McqsLayout == Scholar.Enums.McqsLayout.OneLine ? "flex flex-wrap gap-x-8 gap-y-1" : "grid grid-cols-2 gap-x-8 gap-y-1")">
+                                    @{
+                                        int optIndex = 0;
+                                    }
+                                    @foreach (var opt in q.Options)
+                                    {
+                                        <span class="whitespace-normal">(@(((char)('A' + optIndex)))) @opt.Text</span>
+                                        optIndex++;
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </li>
+            }
+        </ol>
+
+        @* Builder-only controls (hidden on print). *@
+        <div class="mt-1 hidden group-hover:flex gap-3 print:hidden">
+            <button type="button" class="section-delete text-xs font-medium text-red-600 hover:text-red-700"
+                    data-section-index="@(sec.SectionNumber - 1)">Delete Section</button>
+        </div>
+    </section>
+}

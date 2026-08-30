@@ -1,0 +1,39 @@
+@model Scholar.Models.ViewModels.AccountViewModel
+@{
+    ViewData["Title"] = "Manage account";
+    ViewData["PageSubtitle"] = "Update your account details.";
+
+    string inputCls = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400";
+    string labelCls = "block mb-1 text-sm font-medium text-gray-900";
+    string errCls = "mt-1 block text-sm text-red-600";
+}
+
+<div class="w-full rounded-lg bg-white border border-gray-200 shadow-sm p-6">
+    <form asp-action="Index" method="post" class="space-y-5">
+        <div asp-validation-summary="ModelOnly"
+             class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 empty:hidden"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label asp-for="FullName" class="@labelCls"></label>
+                <input asp-for="FullName" class="@inputCls" />
+                <span asp-validation-for="FullName" class="@errCls"></span>
+            </div>
+
+            <div>
+                <label asp-for="Email" class="@labelCls"></label>
+                <input asp-for="Email" autocomplete="off" class="@inputCls" placeholder="user@example.com" />
+                <span asp-validation-for="Email" class="@errCls"></span>
+            </div>
+        </div>
+
+        <button type="submit"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:ring-4 focus:ring-brand-100">
+            Update account
+        </button>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

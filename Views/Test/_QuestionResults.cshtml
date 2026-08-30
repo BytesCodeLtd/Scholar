@@ -1,0 +1,30 @@
+@model IEnumerable<Scholar.Models.Question>
+
+@if (!Model.Any())
+{
+    <div class="p-4 text-sm text-gray-500 text-center">
+        No questions found for the selected filters.
+    </div>
+}
+else
+{
+    <ul class="divide-y divide-gray-100">
+        @foreach (var q in Model)
+        {
+            <li class="py-3">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" name="questionIds" value="@q.Id"
+                           class="mt-1 w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+                    <span class="flex-1 min-w-0">
+                        <span class="block text-gray-800">@q.Text</span>
+                        <span class="mt-1 inline-flex items-center gap-2 text-xs text-gray-500">
+                            <span class="inline-flex items-center rounded bg-brand-50 text-brand-700 px-2 py-0.5 font-medium">@q.Type</span>
+                            <span class="inline-flex items-center rounded bg-gray-100 text-gray-600 px-2 py-0.5">@q.Category</span>
+                            <span>@q.Marks mark@(q.Marks == 1 ? "" : "s")</span>
+                        </span>
+                    </span>
+                </label>
+            </li>
+        }
+    </ul>
+}

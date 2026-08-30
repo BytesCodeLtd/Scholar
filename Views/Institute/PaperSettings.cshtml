@@ -1,0 +1,226 @@
+@using Scholar.Common.Papers
+@using Scholar.Models.ViewModels
+@model TestSettingsViewModel
+@{
+    ViewData["Title"] = "Paper Settings";
+    ViewData["PageSubtitle"] = $"Configure how papers look for {(string.IsNullOrEmpty(Model.InstituteName) ? "your institute" : Model.InstituteName)}.";
+
+    string labelCls = "block mb-1 text-sm font-medium text-gray-900";
+    string inputCls = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400";
+    string errCls = "mt-1 block text-sm text-red-600";
+    string sectionCls = "w-full rounded-lg bg-white border border-gray-200 shadow-sm p-6";
+    string checkboxCls = "w-4 h-4 text-brand-600 bg-gray-50 border-gray-300 rounded focus:ring-brand-500";
+}
+
+@if (Model.CanSwitchInstitute && Model.Institutes.Any())
+{
+    <div class="mb-6 flex justify-end">
+        <form method="get" asp-action="PaperSettings" class="flex items-center gap-2">
+            <label for="instituteId" class="text-sm font-medium text-gray-700">Institute</label>
+            <select id="instituteId" name="instituteId" onchange="this.form.submit()"
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 px-8">
+                @foreach (var inst in Model.Institutes)
+                {
+                    <option value="@inst.Id" selected="@(inst.Id == Model.InstituteId)">@inst.Name</option>
+                }
+            </select>
+        </form>
+    </div>
+}
+
+@if (Model.InstituteId == 0)
+{
+    <div class="@sectionCls text-sm text-gray-600">No institute is available to configure yet.</div>
+    return;
+}
+
+<form asp-action="PaperSettings" method="post" class="space-y-6">
+    <input type="hidden" asp-for="InstituteId" />
+
+    <div asp-validation-summary="ModelOnly" class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3"></div>
+
+    @* ---- Layout & typography ---------------------------------------- *@
+    <div class="@sectionCls">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900">Layout &amp; Typography</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div>
+                <label asp-for="HeaderLayout" class="@labelCls"></label>
+                <select asp-for="HeaderLayout" class="@inputCls">
+                    @foreach (var layout in PaperSettingsCatalog.HeaderLayouts)
+                    {
+                        <option value="@layout.Number">@layout.Label</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label asp-for="HeaderFontStyle" class="@labelCls"></label>
+                <select asp-for="HeaderFontStyle" class="@inputCls">
+                    @foreach (var font in PaperSettingsCatalog.HeaderFonts)
+                    {
+                        <option value="@font">@font</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label asp-for="EnglishTextFontStyle" class="@labelCls"></label>
+                <select asp-for="EnglishTextFontStyle" class="@inputCls">
+                    @foreach (var font in PaperSettingsCatalog.EnglishFonts)
+                    {
+                        <option value="@font">@font</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label asp-for="HeaderFontSize" class="@labelCls"></label>
+                <input asp-for="HeaderFontSize" type="number" min="@PaperSettingsCatalog.MinFontSize" max="@PaperSettingsCatalog.MaxFontSize" class="@inputCls" />
+                <span asp-validation-for="HeaderFontSize" class="@errCls"></span>
+            </div>
+            <div>
+                <label asp-for="HeadingFontSize" class="@labelCls"></label>
+                <input asp-for="HeadingFontSize" type="number" min="@PaperSettingsCatalog.MinFontSize" max="@PaperSettingsCatalog.MaxFontSize" class="@inputCls" />
+                <span asp-validation-for="HeadingFontSize" class="@errCls"></span>
+            </div>
+            <div>
+                <label asp-for="TextFontSize" class="@labelCls"></label>
+                <input asp-for="TextFontSize" type="number" min="@PaperSettingsCatalog.MinFontSize" max="@PaperSettingsCatalog.MaxFontSize" class="@inputCls" />
+                <span asp-validation-for="TextFontSize" class="@errCls"></span>
+            </div>
+            <div>
+                <label asp-for="TextFormatting" class="@labelCls"></label>
+                <select asp-for="TextFormatting" asp-items="Html.GetEnumSelectList<Scholar.Enums.TextFormatting>()" class="@inputCls"></select>
+            </div>
+            <div>
+                <label asp-for="HeadingFormatting" class="@labelCls"></label>
+                <select asp-for="HeadingFormatting" asp-items="Html.GetEnumSelectList<Scholar.Enums.TextFormatting>()" class="@inputCls"></select>
+            </div>
+            <div>
+                <label asp-for="LineHeight" class="@labelCls"></label>
+                <input asp-for="LineHeight" type="number" step="0.1" min="@PaperSettingsCatalog.MinLineHeight" max="@PaperSettingsCatalog.MaxLineHeight" class="@inputCls" />
+                <span asp-validation-for="LineHeight" class="@errCls"></span>
+            </div>
+            <div>
+                <label asp-for="PaperFontColor" class="@labelCls"></label>
+                <select asp-for="PaperFontColor" asp-items="Html.GetEnumSelectList<Scholar.Enums.PaperFontColor>()" class="@inputCls"></select>
+            </div>
+        </div>
+    </div>
+
+    @* ---- Watermark & branding --------------------------------------- *@
+    <div class="@sectionCls">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900">Watermark &amp; Branding</h2>
+
+        <div class="mb-5">
+            <label asp-for="InstituteAddress" class="@labelCls"></label>
+            <input asp-for="InstituteAddress" class="@inputCls" placeholder="e.g. Near Allied Bank, Shalamar Town Lahore. Ph: 03104800041" />
+            <p class="mt-1 text-xs text-gray-500">Printed under the institute name in the paper header.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div>
+                <label asp-for="Watermark" class="@labelCls"></label>
+                <select asp-for="Watermark" asp-items="Html.GetEnumSelectList<Scholar.Enums.WatermarkType>()" class="@inputCls"></select>
+            </div>
+            <div>
+                <label asp-for="PicWatermarkOpacity" class="@labelCls"></label>
+                <input asp-for="PicWatermarkOpacity" type="number" step="0.1" min="@PaperSettingsCatalog.MinOpacity" max="@PaperSettingsCatalog.MaxOpacity" class="@inputCls" />
+                <span asp-validation-for="PicWatermarkOpacity" class="@errCls"></span>
+            </div>
+            <div></div>
+            <div>
+                <label asp-for="PicWatermarkHeight" class="@labelCls"></label>
+                <input asp-for="PicWatermarkHeight" type="number" min="@PaperSettingsCatalog.MinDimension" max="@PaperSettingsCatalog.MaxDimension" class="@inputCls" />
+                <span asp-validation-for="PicWatermarkHeight" class="@errCls"></span>
+            </div>
+            <div>
+                <label asp-for="PicWatermarkWidth" class="@labelCls"></label>
+                <input asp-for="PicWatermarkWidth" type="number" min="@PaperSettingsCatalog.MinDimension" max="@PaperSettingsCatalog.MaxDimension" class="@inputCls" />
+                <span asp-validation-for="PicWatermarkWidth" class="@errCls"></span>
+            </div>
+            <div></div>
+            <div>
+                <label asp-for="LogoHeight" class="@labelCls"></label>
+                <input asp-for="LogoHeight" type="number" min="@PaperSettingsCatalog.MinDimension" max="@PaperSettingsCatalog.MaxDimension" class="@inputCls" />
+                <span asp-validation-for="LogoHeight" class="@errCls"></span>
+            </div>
+            <div>
+                <label asp-for="LogoWidth" class="@labelCls"></label>
+                <input asp-for="LogoWidth" type="number" min="@PaperSettingsCatalog.MinDimension" max="@PaperSettingsCatalog.MaxDimension" class="@inputCls" />
+                <span asp-validation-for="LogoWidth" class="@errCls"></span>
+            </div>
+            <div class="flex items-end">
+                @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                {
+                    <div class="text-xs text-gray-500">
+                        <span class="block mb-1">Current logo</span>
+                        <img src="@Model.LogoUrl" alt="Institute logo" class="h-12 w-auto rounded border border-gray-200 bg-white p-1" />
+                    </div>
+                }
+                else
+                {
+                    <p class="text-xs text-gray-400">No logo uploaded. Add one from the institute's profile.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ---- Content options -------------------------------------------- *@
+    <div class="@sectionCls">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900">Content Options</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label asp-for="McqsLayout" class="@labelCls"></label>
+                <select asp-for="McqsLayout" asp-items="Html.GetEnumSelectList<Scholar.Enums.McqsLayout>()" class="@inputCls"></select>
+            </div>
+            <div>
+                <label asp-for="NumeralStyle" class="@labelCls"></label>
+                <select asp-for="NumeralStyle" asp-items="Html.GetEnumSelectList<Scholar.Enums.NumeralStyle>()" class="@inputCls"></select>
+            </div>
+            <div>
+                <label asp-for="ImportantNote" class="@labelCls"></label>
+                <textarea asp-for="ImportantNote" rows="3" class="@inputCls" placeholder="e.g. Write your roll number and name in the space provided."></textarea>
+            </div>
+            <div>
+                <label asp-for="FooterText" class="@labelCls"></label>
+                <textarea asp-for="FooterText" rows="3" class="@inputCls" placeholder="e.g. Copyrights © Your Institute"></textarea>
+            </div>
+        </div>
+    </div>
+
+    @* ---- Toggles ---------------------------------------------------- *@
+    <div class="@sectionCls">
+        <h2 class="mb-4 text-lg font-semibold text-gray-900">Options</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="flex items-center gap-3 text-sm text-gray-800">
+                <input asp-for="ShowConceptualQuestionMark" class="@checkboxCls" />
+                <span>@Html.DisplayNameFor(m => m.ShowConceptualQuestionMark)</span>
+            </label>
+            <label class="flex items-center gap-3 text-sm text-gray-800">
+                <input asp-for="HidePhoneNumber" class="@checkboxCls" />
+                <span>@Html.DisplayNameFor(m => m.HidePhoneNumber)</span>
+            </label>
+            <label class="flex items-center gap-3 text-sm text-gray-800">
+                <input asp-for="QuestionHeadingBottomBorder" class="@checkboxCls" />
+                <span>@Html.DisplayNameFor(m => m.QuestionHeadingBottomBorder)</span>
+            </label>
+            <label class="flex items-center gap-3 text-sm text-gray-800">
+                <input asp-for="ShowChapterName" class="@checkboxCls" />
+                <span>@Html.DisplayNameFor(m => m.ShowChapterName)</span>
+            </label>
+            <label class="flex items-center gap-3 text-sm text-gray-800">
+                <input asp-for="ShowGrammaticalTerms" class="@checkboxCls" />
+                <span>@Html.DisplayNameFor(m => m.ShowGrammaticalTerms)</span>
+            </label>
+        </div>
+    </div>
+
+    <div class="flex justify-end">
+        <button type="submit"
+                class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:ring-4 focus:ring-brand-100">
+            Update Settings
+        </button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,323 @@
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.AspNetCore.Routing
+@using Scholar.Common.Tables
+@model Scholar.Common.Tables.TableModel
+@{
+    var query = ViewContext.HttpContext.Request.Query;
+
+    // Build a link to page p, preserving any other query-string values (filters, etc.).
+    string PageUrl(int p)
+    {
+        var values = query.ToDictionary(kv => kv.Key, kv => (string?)kv.Value.ToString());
+        values["page"] = p.ToString();
+        return QueryHelpers.AddQueryString(ViewContext.HttpContext.Request.Path, values);
+    }
+
+    // Build a link that changes the page size and jumps back to page 1.
+    string SizeUrl(int size)
+    {
+        var values = query.ToDictionary(kv => kv.Key, kv => (string?)kv.Value.ToString());
+        values["pageSize"] = size.ToString();
+        values["page"] = "1";
+        return QueryHelpers.AddQueryString(ViewContext.HttpContext.Request.Path, values);
+    }
+
+    // Current sort (e.g. "Name asc") parsed from the query string.
+    var orderParts = query["orderBy"].ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    string sortColumn = orderParts.Length > 0 ? orderParts[0] : "";
+    string sortDir = orderParts.Length > 1 ? orderParts[1].ToLower() : "asc";
+
+    // Build a link that sorts by a column, jumping back to page 1.
+    string SortUrl(string property, string dir)
+    {
+        var values = query.ToDictionary(kv => kv.Key, kv => (string?)kv.Value.ToString());
+        values["orderBy"] = $"{property} {dir}";
+        values["page"] = "1";
+        return QueryHelpers.AddQueryString(ViewContext.HttpContext.Request.Path, values);
+    }
+
+    int windowStart = Math.Max(1, Model.Page - 2);
+    int windowEnd = Math.Min(Model.TotalPages, Model.Page + 2);
+
+    // Resolve a header action's target URL: an explicit Url wins, otherwise build from controller/action.
+    string ActionHref(TableAction a)
+    {
+        if (!string.IsNullOrEmpty(a.Url)) return a.Url;
+        var rv = new RouteValueDictionary();
+        if (a.RouteValues is not null)
+        {
+            foreach (var kv in a.RouteValues) rv[kv.Key] = kv.Value;
+        }
+        return Url.Action(a.Action, a.Controller, rv) ?? "#";
+    }
+
+    string ActionClasses(TableActionStyle style) => style switch
+    {
+        TableActionStyle.Secondary => "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50",
+        TableActionStyle.Danger => "text-white bg-red-600 border border-red-600 hover:bg-red-700",
+        _ => "text-white bg-brand-600 border border-brand-600 hover:bg-brand-700"
+    };
+
+    const string ActionBase = "inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg";
+}
+
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+    @if (!string.IsNullOrEmpty(Model.Title) || Model.ShowSearch || Model.Actions.Count > 0)
+    {
+        <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b bg-gray-50 border-gray-200">
+            @if (!string.IsNullOrEmpty(Model.Title))
+            {
+                <h2 class="text-lg font-semibold text-gray-900">@Model.Title</h2>
+            }
+            else
+            {
+                <span></span>
+            }
+
+            <div class="flex flex-wrap items-center gap-3 ms-auto">
+                @if (Model.ShowSearch)
+                {
+                    <form method="get" class="flex items-center gap-2">
+                        @* Preserve other query values (pageSize, orderBy, ...); reset page to 1. *@
+                        @foreach (var kv in query)
+                        {
+                            @if (kv.Key != "search" && kv.Key != "page")
+                            {
+                                <input type="hidden" name="@kv.Key" value="@kv.Value" />
+                            }
+                        }
+                        <input type="search" name="search" value="@query["search"]" placeholder="Search…"
+                               class="w-56 text-sm text-gray-700 border border-gray-300 rounded-lg p-2 focus:ring-brand-500 focus:border-brand-500" />
+                        <button type="submit"
+                                class="px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700">
+                            Search
+                        </button>
+                    </form>
+                }
+
+                @foreach (var action in Model.Actions)
+                {
+                    var css = $"{ActionBase} {ActionClasses(action.Style)}";
+                    @if (string.Equals(action.Method, "post", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <form method="post" action="@ActionHref(action)" class="inline"
+                              onsubmit="@(action.Confirm is null ? null : $"return confirm('{action.Confirm}');")">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="@css">
+                                @if (!string.IsNullOrEmpty(action.IconSvg))
+                                {
+                                    @Html.Raw(action.IconSvg)
+                                }
+                                @action.Label
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a href="@ActionHref(action)" class="@css"
+                           onclick="@(action.Confirm is null ? null : $"return confirm('{action.Confirm}');")">
+                            @if (!string.IsNullOrEmpty(action.IconSvg))
+                            {
+                                @Html.Raw(action.IconSvg)
+                            }
+                            @action.Label
+                        </a>
+                    }
+                }
+            </div>
+        </div>
+    }
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-700">
+            <thead class="text-xs uppercase text-gray-500 border-b border-gray-200">
+                <tr>
+                    @if (Model.ShowCheckbox)
+                    {
+                        <th scope="col" class="px-4 py-4 w-10">
+                            <input type="checkbox" onclick="toggleAllRows(this)" class="w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+                        </th>
+                    }
+                    @if (Model.ShowRowMenu)
+                    {
+                        <th scope="col" class="px-4 py-5 w-10"><span class="sr-only">Actions</span></th>
+                    }
+                    @foreach (var col in Model.Columns)
+                    {
+                        <th scope="col" class="px-4 py-5 font-medium">
+                            @if (col.Sortable)
+                            {
+                                bool active = sortColumn == col.Property;
+                                string nextDir = active && sortDir == "asc" ? "desc" : "asc";
+                                <a href="@SortUrl(col.Property, nextDir)" class="inline-flex items-center gap-1 hover:text-gray-900">
+                                    @col.Header
+                                    <span class="text-gray-400">@(active ? (sortDir == "asc" ? "▲" : "▼") : "↕")</span>
+                                </a>
+                            }
+                            else
+                            {
+                                @col.Header
+                            }
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Rows.Count == 0)
+                {
+                    <tr>
+                        <td colspan="@(Model.Columns.Count + (Model.ShowCheckbox ? 1 : 0) + (Model.ShowRowMenu ? 1 : 0))" class="px-4 py-8 text-center text-gray-400">
+                            No records found.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr class="border-b border-gray-100 hover:bg-gray-50">
+                            @if (Model.ShowCheckbox)
+                            {
+                                <td class="px-4 py-3">
+                                    <input type="checkbox" name="selected" value="@Model.CheckboxValue(row)"
+                                           class="row-check w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+                                </td>
+                            }
+                            @if (Model.ShowRowMenu)
+                            {
+                                <td class="px-4 py-3">
+                                    <button type="button"
+                                            class="inline-flex items-center justify-center w-8 h-8 text-gray-500 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-100">
+                                        <span class="sr-only">Open row menu</span>
+                                        <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                                            <path d="M8 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+                                        </svg>
+                                    </button>
+                                </td>
+                            }
+                            @foreach (var col in Model.Columns)
+                            {
+                                var value = Model.Cell(row, col);
+                                <td class="px-4 py-3">
+                                    @if (value is bool flag)
+                                    {
+                                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium @(flag ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600")">
+                                            @(flag ? "Active" : "Inactive")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        @value
+                                    }
+                                </td>
+                            }
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Rows.Count > 0)
+    {
+        <div class="flex items-center justify-between gap-4 px-4 py-3 border-t border-gray-200">
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-gray-500">
+                    Page @Model.Page of @Model.TotalPages · @Model.TotalCount total
+                </span>
+                <label class="flex items-center gap-2 text-xs text-gray-500">
+                    Rows
+                    <select onchange="location.href=this.value"
+                            class="w-16 text-sm text-gray-700 border border-gray-300 rounded-lg p-1.5 focus:ring-brand-500 focus:border-brand-500">
+                        @foreach (var size in new[] { 10, 25, 50, 100 })
+                        {
+                            <option value="@SizeUrl(size)" selected="@(size == Model.PageSize)">@size</option>
+                        }
+                    </select>
+                </label>
+            </div>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Page navigation">
+                    <ul class="inline-flex -space-x-px text-sm">
+                        <li>
+                            @if (Model.Page > 1)
+                            {
+                                <a href="@PageUrl(Model.Page - 1)" aria-label="Previous"
+                                   class="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700">
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="w-2.5 h-2.5 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 1 1 5l4 4" />
+                                    </svg>
+                                </a>
+                            }
+                            else
+                            {
+                                <span aria-label="Previous"
+                                      class="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-300 bg-white border border-e-0 border-gray-200 rounded-s-lg cursor-not-allowed">
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="w-2.5 h-2.5 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 1 1 5l4 4" />
+                                    </svg>
+                                </span>
+                            }
+                        </li>
+
+                        @for (int p = windowStart; p <= windowEnd; p++)
+                        {
+                            <li>
+                                @if (p == Model.Page)
+                                {
+                                    <span aria-current="page"
+                                          class="flex items-center justify-center px-3 h-8 leading-tight text-white bg-brand-600 border border-brand-600 hover:bg-brand-700">@p</span>
+                                }
+                                else
+                                {
+                                    <a href="@PageUrl(p)"
+                                       class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700">@p</a>
+                                }
+                            </li>
+                        }
+
+                        <li>
+                            @if (Model.Page < Model.TotalPages)
+                            {
+                                <a href="@PageUrl(Model.Page + 1)" aria-label="Next"
+                                   class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700">
+                                    <span class="sr-only">Next</span>
+                                    <svg class="w-2.5 h-2.5 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
+                                    </svg>
+                                </a>
+                            }
+                            else
+                            {
+                                <span aria-label="Next"
+                                      class="flex items-center justify-center px-3 h-8 leading-tight text-gray-300 bg-white border border-gray-200 rounded-e-lg cursor-not-allowed">
+                                    <span class="sr-only">Next</span>
+                                    <svg class="w-2.5 h-2.5 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
+                                    </svg>
+                                </span>
+                            }
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    }
+</div>
+
+@if (Model.ShowCheckbox)
+{
+    <script>
+        function toggleAllRows(headerCheckbox) {
+            var table = headerCheckbox.closest('table');
+            var rowCheckboxes = table.querySelectorAll('.row-check');
+
+            rowCheckboxes.forEach(function (checkbox) {
+                checkbox.checked = headerCheckbox.checked;
+            });
+        }
+    </script>
+}

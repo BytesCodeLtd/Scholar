@@ -6,17 +6,16 @@
 @source "../wwwroot/js/**/*.js";
 @source "../node_modules/flowbite/**/*.js";
 
-/*
-  Your own look — customize design tokens here.
-  These become utilities automatically, e.g. bg-brand-600, text-brand-700.
-*/
 @theme {
-    /* Poppins as the app-wide default font. */
     --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
 
-    --color-brand-50: #eff6ff;
-    --color-brand-100: #dbeafe;
-    --color-brand-500: #3b82f6;
-    --color-brand-600: #2563eb;
-    --color-brand-700: #1d4ed8;
+    --color-brand-50: #f2f0f7;
+    --color-brand-100: #e3dfef;
+    --color-brand-500: #7d68b0;
+    --color-brand-600: #675496;
+    --color-brand-700: #524478;
+}
+
+body {
+    font-size: 14px;
 }

@@ -1,0 +1,97 @@
+@using Scholar.Common.Papers
+@using Scholar.Models.ViewModels
+@model PaperDocumentViewModel
+@{
+    var s = Model.Settings;
+    string headerText = $"font-size:{s.HeaderFontSize}pt;font-family:{s.FontFamilyCss(s.HeaderFontStyle)};color:{s.FontColorHex};font-weight:700;line-height:1.15;";
+    string logoStyle = $"height:{s.LogoHeight}px;width:{s.LogoWidth}px;object-fit:contain;";
+
+    var sectionsModel = new PaperSectionsViewModel { Settings = s, Sections = Model.Sections };
+}
+
+<div class="paper-sheet relative w-full bg-white text-black shadow-sm" style="padding:40px 40px;">
+
+    @* ---- Watermark ---- *@
+    @if (s.Watermark == Scholar.Enums.WatermarkType.Picture && !string.IsNullOrEmpty(s.LogoUrl))
+    {
+        <div class="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+            <img src="@s.LogoUrl" alt="" style="opacity:@s.PicWatermarkOpacity;max-width:60%;height:auto;" />
+        </div>
+    }
+    else if (s.Watermark == Scholar.Enums.WatermarkType.Text && !string.IsNullOrEmpty(s.InstituteName))
+    {
+        <div class="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+            <span style="opacity:@s.PicWatermarkOpacity;font-size:72px;font-weight:800;transform:rotate(-30deg);color:@s.FontColorHex;">
+                @s.InstituteName
+            </span>
+        </div>
+    }
+
+    <div class="relative">
+        @* ---- Title block (institute name + address, dashed border) ---- *@
+        <div class="mb-2 border-2 border-dashed border-black px-4 py-2 text-center">
+            <div style="@headerText">@s.InstituteName</div>
+            @if (!string.IsNullOrWhiteSpace(s.InstituteAddress))
+            {
+                <div class="font-bold uppercase" style="color:@s.FontColorHex;font-size:11pt;letter-spacing:0.02em;">@s.InstituteAddress</div>
+            }
+        </div>
+
+        @* ---- Info table: left fields | centered logo | right fields ---- *@
+        <table class="mb-4 w-full table-fixed border-collapse text-sm" style="color:@s.FontColorHex;">
+            <colgroup>
+                <col style="width:15%" />
+                <col style="width:21%" />
+                <col style="width:26%" />
+                <col style="width:20%" />
+                <col style="width:18%" />
+            </colgroup>
+            <tbody>
+                <tr>
+                    <td class="border border-black px-2 py-1 font-semibold">Student Name:</td>
+                    <td class="border border-black px-2 py-1"></td>
+                    <td class="border border-black px-2 py-1 text-center align-middle" rowspan="3">
+                        @if (!string.IsNullOrEmpty(s.LogoUrl))
+                        {
+                            <img src="@s.LogoUrl" alt="Logo" class="mx-auto inline-block max-w-full" style="@logoStyle" />
+                        }
+                    </td>
+                    <td class="border border-black px-2 py-1 font-semibold">Class:</td>
+                    <td class="border border-black px-2 py-1">@Model.GradeName</td>
+                </tr>
+                <tr>
+                    <td class="border border-black px-2 py-1 font-semibold">Paper Type:</td>
+                    <td class="border border-black px-2 py-1">@Model.PaperType</td>
+                    <td class="border border-black px-2 py-1 font-semibold">Subject:</td>
+                    <td class="border border-black px-2 py-1 font-semibold">@Model.SubjectName</td>
+                </tr>
+                <tr>
+                    <td class="border border-black px-2 py-1 font-semibold">Paper Time:</td>
+                    <td class="border border-black px-2 py-1">@(Model.DurationMinutes > 0 ? $"{Model.DurationMinutes} min" : "")</td>
+                    <td class="border border-black px-2 py-1 font-semibold">Maximum Marks:</td>
+                    <td class="border border-black px-2 py-1">@(Model.TotalMarks > 0 ? Model.TotalMarks.ToString() : "")</td>
+                </tr>
+            </tbody>
+        </table>
+
+        @if (!string.IsNullOrWhiteSpace(s.ImportantNote))
+        {
+            <p class="mb-4 border border-dashed border-gray-400 px-3 py-2 text-sm" style="color:@s.FontColorHex;">
+                <span class="font-semibold">Note:</span> @s.ImportantNote
+            </p>
+        }
+
+        @* ---- Sections (replaced live by the builder) ---- *@
+        <div id="paper-sections">
+            <partial name="_PaperSectionsList" model="sectionsModel" />
+        </div>
+
+        @* ---- Footer ---- *@
+        @if (!string.IsNullOrWhiteSpace(s.FooterText))
+        {
+            <footer class="mt-8 border-t border-gray-400 pt-2 text-center text-xs" style="color:@s.FontColorHex;">
+                @s.FooterText
+            </footer>
+        }
+    </div>
+</div>

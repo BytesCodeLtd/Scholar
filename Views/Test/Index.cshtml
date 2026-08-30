@@ -1,0 +1,94 @@
+@using Scholar.Models.ViewModels
+@model IEnumerable<PaperCard>
+@{
+    ViewData["Title"] = "Saved Papers";
+    var count = Model.Count();
+    ViewData["PageSubtitle"] = count == 0
+        ? "Nothing saved for your institute yet"
+        : $"{count} paper{(count == 1 ? "" : "s")} saved for your institute";
+}
+
+<div class="mb-6 flex justify-end">
+    <a asp-controller="Board" asp-action="Index"
+       class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-100">
+        <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16" />
+        </svg>
+        Generate paper
+    </a>
+</div>
+
+@if (count == 0)
+{
+    <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white px-6 py-16 text-center">
+        <span class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-brand-50 text-brand-600">
+            <svg class="w-7 h-7" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M5 1h6.5L15 4.5V19a.5.5 0 0 1-.5.5h-9A.5.5 0 0 1 5 19V1Zm3 9h4m-4 4h4" />
+            </svg>
+        </span>
+        <h2 class="mt-4 text-base font-semibold text-gray-900">No papers yet</h2>
+        <p class="mt-1 max-w-sm text-sm text-gray-500">
+            Generate your first paper from the question bank and it will be saved here for you to reuse.
+        </p>
+        <a asp-controller="Board" asp-action="Index"
+           class="mt-5 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-100">
+            Generate paper
+        </a>
+    </div>
+}
+else
+{
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+        @foreach (var paper in Model)
+        {
+            <article class="group relative flex flex-col overflow-hidden rounded-xl bg-white border border-gray-200 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-600/10 hover:border-brand-500/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+                @* Whole card opens the paper. *@
+                <a asp-controller="Test" asp-action="Print" asp-route-id="@paper.Id" class="absolute inset-0 z-10" aria-label="Open @paper.Title"></a>
+                @* Brand rule down the spine of the paper. *@
+                <span class="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-brand-500 to-brand-700 transition-all duration-200 group-hover:w-1.5"></span>
+
+                <div class="px-5 pt-5">
+                    <div class="flex items-start justify-between gap-3">
+                        @* Paper type reads like the stamp on a real exam header. *@
+                        <span class="text-[11px] font-semibold uppercase tracking-[0.15em] text-brand-700">
+                            @(string.IsNullOrWhiteSpace(paper.Type) ? "Question Paper" : paper.Type)
+                        </span>
+                        @if (!string.IsNullOrWhiteSpace(paper.Subject))
+                        {
+                            <span class="shrink-0 inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                                @paper.Subject
+                            </span>
+                        }
+                    </div>
+
+                    <h2 class="mt-2 text-lg font-semibold leading-snug text-gray-900 line-clamp-2 group-hover:text-brand-700">
+                        @paper.Title
+                    </h2>
+
+                    <p class="mt-1.5 flex items-center gap-1.5 text-sm text-gray-500">
+                        <svg class="w-4 h-4 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.5 1v3m-7-3v3m-3 4h16M2 3h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+                        </svg>
+                        @paper.Date.ToString("dd MMM yyyy")
+                    </p>
+                </div>
+
+                @* Tear line — the perforation under a paper's header block. *@
+                <div class="mt-5 border-t border-dashed border-gray-200"></div>
+
+                <dl class="grid grid-cols-2 divide-x divide-gray-100 bg-gray-50">
+                    <div class="px-5 py-3">
+                        <dt class="text-[10px] font-medium uppercase tracking-wide text-gray-400">Max Marks</dt>
+                        <dd class="mt-0.5 text-2xl font-bold leading-none text-brand-700">@paper.TotalMarks</dd>
+                    </div>
+                    <div class="px-5 py-3">
+                        <dt class="text-[10px] font-medium uppercase tracking-wide text-gray-400">Time Allowed</dt>
+                        <dd class="mt-0.5 text-2xl font-bold leading-none text-gray-900">
+                            @paper.DurationMinutes<span class="ms-1 text-sm font-medium text-gray-400">min</span>
+                        </dd>
+                    </div>
+                </dl>
+            </article>
+        }
+    </div>
+}

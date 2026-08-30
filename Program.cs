@@ -52,6 +52,12 @@ builder.Services.AddRazorPages();
 
 WebApplication? app = builder.Build();
 
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    ScholarDbContext db = scope.ServiceProvider.GetRequiredService<ScholarDbContext>();
+    db.Database.Migrate();
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Dashboard/Error");

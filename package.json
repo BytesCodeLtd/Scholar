@@ -1,0 +1,21 @@
+{
+  "name": "scholar",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "css:build": "tailwindcss -i ./Styles/app.css -o ./wwwroot/css/app.css --minify",
+    "css:watch": "tailwindcss -i ./Styles/app.css -o ./wwwroot/css/app.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  },
+  "dependencies": {
+    "flowbite": "^4.0.2"
+  }
+}

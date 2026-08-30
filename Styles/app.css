@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@plugin "flowbite/plugin";
+
+/* Files Tailwind scans for class names (so it only ships CSS you actually use). */
+@source "../Views/**/*.cshtml";
+@source "../wwwroot/js/**/*.js";
+@source "../node_modules/flowbite/**/*.js";
+
+@theme {
+    --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+    --color-brand-50: #f2f0f7;
+    --color-brand-100: #e3dfef;
+    --color-brand-500: #7d68b0;
+    --color-brand-600: #675496;
+    --color-brand-700: #524478;
+}
+
+body {
+    font-size: 14px;
+}

@@ -1,0 +1,99 @@
+@model IEnumerable<Scholar.Models.Board>
+@{
+    ViewData["Title"] = "Past Papers";
+    ViewData["PageSubtitle"] = "Pick a board, grade, and subject to see available past papers.";
+
+    string labelCls = "block mb-1 text-sm font-medium text-gray-900";
+    string selectCls = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 disabled:opacity-60 disabled:cursor-not-allowed";
+}
+
+<div class="w-full rounded-lg bg-white border border-gray-200 shadow-sm p-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div>
+            <label for="board" class="@labelCls">Board</label>
+            <select id="board" class="@selectCls">
+                <option value="">Select board</option>
+                @foreach (var board in Model)
+                {
+                    <option value="@board.Id">@board.Name</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="grade" class="@labelCls">Grade</label>
+            <select id="grade" class="@selectCls" disabled>
+                <option value="">Select grade</option>
+            </select>
+        </div>
+        <div>
+            <label for="subject" class="@labelCls">Subject</label>
+            <select id="subject" class="@selectCls" disabled>
+                <option value="">Select subject</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div id="results" class="mt-6">
+    <div class="rounded-lg border border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-400">
+        Select a subject to view its past papers.
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var board = document.getElementById('board');
+            var grade = document.getElementById('grade');
+            var subject = document.getElementById('subject');
+            var results = document.getElementById('results');
+
+            function reset(select, placeholder) {
+                select.innerHTML = '<option value="">' + placeholder + '</option>';
+                select.disabled = true;
+            }
+
+            function fill(select, items, placeholder) {
+                var html = '<option value="">' + placeholder + '</option>';
+                items.forEach(function (i) { html += '<option value="' + i.id + '">' + i.name + '</option>'; });
+                select.innerHTML = html;
+                select.disabled = items.length === 0;
+            }
+
+            function placeholderResults(text) {
+                results.innerHTML =
+                    '<div class="rounded-lg border border-dashed border-gray-200 bg-white px-6 py-12 text-center text-sm text-gray-400">' + text + '</div>';
+            }
+
+            board.addEventListener('change', function () {
+                reset(grade, 'Select grade');
+                reset(subject, 'Select subject');
+                placeholderResults('Select a subject to view its past papers.');
+                if (!board.value) return;
+                fetch('@Url.Action("Grades", "PastPaper")?boardId=' + board.value)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { fill(grade, data, 'Select grade'); });
+            });
+
+            grade.addEventListener('change', function () {
+                reset(subject, 'Select subject');
+                placeholderResults('Select a subject to view its past papers.');
+                if (!grade.value) return;
+                fetch('@Url.Action("Subjects", "PastPaper")?boardId=' + board.value + '&gradeId=' + grade.value)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) { fill(subject, data, 'Select subject'); });
+            });
+
+            subject.addEventListener('change', function () {
+                if (!subject.value) {
+                    placeholderResults('Select a subject to view its past papers.');
+                    return;
+                }
+                placeholderResults('Loading…');
+                fetch('@Url.Action("List", "PastPaper")?subjectId=' + subject.value)
+                    .then(function (r) { return r.text(); })
+                    .then(function (html) { results.innerHTML = html; });
+            });
+        })();
+    </script>
+}

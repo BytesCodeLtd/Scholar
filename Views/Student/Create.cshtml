@@ -1,0 +1,103 @@
+@model Scholar.Models.ViewModels.CreateStudentViewModel
+@{
+    ViewData["Title"] = "Add student";
+    ViewData["PageSubtitle"] = "Add a student to the institute roster.";
+}
+
+<div class="w-full rounded-lg bg-white border border-gray-200 shadow-sm p-6">
+    <form asp-controller="Student" asp-action="Create" method="post" class="space-y-5">
+        <div asp-validation-summary="ModelOnly"
+             class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            @if (Model.ShowInstitute)
+            {
+                <div class="md:col-span-2">
+                    <label asp-for="InstituteId" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                    <select asp-for="InstituteId" asp-items="Model.InstituteOptions"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5">
+                        <option value="">Select institute</option>
+                    </select>
+                    <span asp-validation-for="InstituteId" class="mt-1 block text-sm text-red-600"></span>
+                </div>
+            }
+
+            <div>
+                <label asp-for="FullName" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="FullName"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400" />
+                <span asp-validation-for="FullName" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="RollNumber" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="RollNumber"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400" />
+                <span asp-validation-for="RollNumber" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="GradeId" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <select asp-for="GradeId" asp-items="Model.GradeOptions"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5">
+                    <option value="">Select class</option>
+                </select>
+                <span asp-validation-for="GradeId" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="Section" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="Section"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400"
+                       placeholder="e.g. A" />
+                <span asp-validation-for="Section" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="Gender" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <select asp-for="Gender" asp-items="Html.GetEnumSelectList<Scholar.Enums.Gender>()"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5">
+                    <option value="">Select gender</option>
+                </select>
+                <span asp-validation-for="Gender" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="DateOfBirth" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="DateOfBirth" type="date"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5" />
+                <span asp-validation-for="DateOfBirth" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="GuardianName" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="GuardianName"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400" />
+                <span asp-validation-for="GuardianName" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="PhoneNumber" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="PhoneNumber"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400"
+                       placeholder="03xx-xxxxxxx" />
+                <span asp-validation-for="PhoneNumber" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button type="submit"
+                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:ring-4 focus:ring-brand-100">
+                Add student
+            </button>
+            <a asp-controller="Student" asp-action="Index"
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

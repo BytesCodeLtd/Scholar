@@ -1,0 +1,114 @@
+@model IEnumerable<Chapter>
+@{
+    ViewData["Title"] = "Chapters";
+    ViewData["PageSubtitle"] = "Select the chapters to include in the test.";
+}
+
+@if (!Model.Any())
+{
+    <div class="p-4 text-sm text-blue-800 rounded-lg bg-blue-50" role="alert">
+        No chapters for this subject yet.
+    </div>
+}
+else
+{
+    <form id="chapter-form" method="post" asp-controller="Test" asp-action="Create">
+        <input type="hidden" name="subjectId" value="@ViewBag.SubjectId" />
+
+        <label class="mb-3 inline-flex items-center gap-3 text-sm font-medium text-gray-900 cursor-pointer">
+            <input type="checkbox" id="select-all"
+                   class="w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+            Select all chapters &amp; topics
+        </label>
+
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm divide-y divide-gray-100">
+            @foreach (var chapter in Model)
+            {
+                <details class="group" open>
+                    <summary class="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-50 list-none">
+                        <input type="checkbox" id="chapter-@chapter.Id" name="selectedChapterIds" value="@chapter.Id"
+                               onclick="event.stopPropagation();"
+                               class="chapter-check w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+
+                        <span class="inline-flex items-center justify-center w-9 h-9 shrink-0 rounded-lg bg-brand-50 text-brand-700 text-sm font-semibold">
+                            @chapter.Number
+                        </span>
+
+                        <span class="flex-1 min-w-0">
+                            <span class="block font-medium text-gray-900 truncate">@chapter.Name</span>
+                        </span>
+
+                        <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none"
+                             stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </summary>
+
+                    @if (chapter.Topics.Any())
+                    {
+                        <div class="pl-9 pr-4 pb-4">
+                            <div class="pl-5 border-l-2 border-gray-200 space-y-2">
+                                @foreach (var topic in chapter.Topics.OrderBy(t => t.Number))
+                                {
+                                    <label for="topic-@topic.Id"
+                                           class="flex items-center gap-3 py-1 cursor-pointer text-sm">
+                                        <input type="checkbox" id="topic-@topic.Id" name="selectedTopicIds" value="@topic.Id"
+                                               data-chapter="@chapter.Id"
+                                               class="topic-check w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+                                        <span class="text-gray-500 font-medium w-10 shrink-0">@topic.Number</span>
+                                        <span class="text-gray-800">@topic.Name</span>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="pl-9 pr-4 pb-4">
+                            <p class="pl-5 border-l-2 border-gray-200 text-sm text-gray-400">No topics in this chapter.</p>
+                        </div>
+                    }
+                </details>
+            }
+        </div>
+
+        <div class="mt-6">
+            <button type="submit"
+                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:ring-4 focus:ring-brand-100">
+                Next
+            </button>
+        </div>
+    </form>
+
+    <script>
+        const form = document.getElementById('chapter-form');
+        const master = document.getElementById('select-all');
+        const allBoxes = () => [...form.querySelectorAll('.chapter-check, .topic-check')];
+        const topicsOf = id => [...form.querySelectorAll(`.topic-check[data-chapter="${id}"]`)];
+
+        form.addEventListener('change', e => {
+            if (e.target === master) {
+                allBoxes().forEach(b => (b.checked = master.checked));
+            } else if (e.target.classList.contains('chapter-check')) {
+                topicsOf(e.target.value).forEach(t => (t.checked = e.target.checked));
+            }
+            sync();
+        });
+
+        function sync() {
+            form.querySelectorAll('.chapter-check').forEach(c => {
+                const topics = topicsOf(c.value);
+                if (!topics.length) {
+                    return;
+                }                
+                c.checked = topics.every(t => t.checked);
+                c.indeterminate = !c.checked && topics.some(t => t.checked);
+            });
+            const boxes = allBoxes();
+            master.checked = boxes.length > 0 && boxes.every(b => b.checked);
+            master.indeterminate = !master.checked && boxes.some(b => b.checked);
+        }
+
+        sync();
+    </script>
+}

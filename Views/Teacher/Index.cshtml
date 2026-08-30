@@ -1,0 +1,18 @@
+@using Scholar.Models.ViewModels
+@model PagedResult<TeacherRow>
+@{
+    ViewData["Title"] = "Teachers";
+
+    TableModel table = TableModel.For(Model)
+                                 .Title("Teachers")
+                                 .WithSearch()
+                                 .WithCheckbox(show: true, valueProperty: nameof(TeacherRow.Id))
+                                 .WithRowMenu()
+                                 .Column(TableColumns.Name, nameof(TeacherRow.Name), sortable: true)
+                                 .Column(TableColumns.Email, nameof(TeacherRow.Email), sortable: true)
+                                 .Column(TableColumns.Subjects, nameof(TeacherRow.Subjects))
+                                 .Column(TableColumns.Grades, nameof(TeacherRow.Classes))
+                                 .Build();
+}
+
+@await Component.InvokeAsync("DataTable", new { model = table })

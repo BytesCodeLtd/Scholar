@@ -1,0 +1,110 @@
+@using Microsoft.AspNetCore.Identity
+@using Scholar.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@{
+    ApplicationUser? currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
+    string? displayName = currentUser?.FullName ?? currentUser?.Email ?? "User";
+    string? initial = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Trim()[..1].ToUpper();
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+</head>
+<body class="min-h-screen flex flex-col bg-gray-50 text-gray-900">
+    <partial name="_Toast" />
+    @if (ViewData["HideNav"] as bool? != true)
+    {
+    <header class="sticky top-0 z-40">
+        <nav class="bg-white border-b border-gray-200">
+            <div class="px-4">
+                <div class="flex items-center justify-between h-14">
+                    <div class="flex items-center gap-3">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <button type="button"
+                                    class="group sm:hidden inline-flex items-center p-2 text-gray-500 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-100"
+                                    data-drawer-target="sidebar" data-drawer-toggle="sidebar" aria-controls="sidebar" aria-expanded="false">
+                                <span class="sr-only">Toggle sidebar</span>
+                                @* Shown when the sidebar is open (collapse icon). *@
+                                <svg class="w-6 h-6 group-aria-[expanded=false]:hidden" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.99994 10 7 11.9999l1.99994 2M12 5v14M5 4h14c.5523 0 1 .44772 1 1v14c0 .5523-.4477 1-1 1H5c-.55228 0-1-.4477-1-1V5c0-.55228.44772-1 1-1Z" />
+                                </svg>
+                                @* Shown when the sidebar is closed (open icon). *@
+                                <svg class="w-6 h-6 hidden group-aria-[expanded=false]:block" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m7 10 1.99994 1.9999-1.99994 2M12 5v14M5 4h14c.5523 0 1 .44772 1 1v14c0 .5523-.4477 1-1 1H5c-.55228 0-1-.4477-1-1V5c0-.55228.44772-1 1-1Z" />
+                                </svg>
+                            </button>
+                        }
+                        <a class="text-xl font-semibold text-brand-700" asp-area="" asp-controller="Dashboard" asp-action="Index">Scholar</a>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            <!-- User menu -->
+                            <button type="button"
+                                    class="flex items-center rounded-full focus:ring-4 focus:ring-brand-100"
+                                    id="user-menu-button" aria-expanded="false"
+                                    data-dropdown-toggle="user-dropdown" data-dropdown-placement="bottom">
+                                <span class="sr-only">Open user menu</span>
+                                <span class="relative inline-flex items-center justify-center w-9 h-9 overflow-hidden bg-brand-600 rounded-full">
+                                    <span class="font-medium text-white">@initial</span>
+                                </span>
+                            </button>
+
+                            <div id="user-dropdown"
+                                 class="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-lg border border-gray-100 w-56">
+                                <div class="px-4 py-3">
+                                    <span class="block text-sm font-medium text-gray-900 truncate">@displayName</span>
+                                    <span class="block text-sm text-gray-500 truncate">@currentUser?.Email</span>
+                                </div>
+                                <ul class="py-2" aria-labelledby="user-menu-button">
+                                    <li>
+                                        <a asp-area="" asp-controller="Account" asp-action="Index" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Manage account</a>
+                                    </li>
+                                </ul>
+                                <div class="py-2">
+                                        <form asp-controller="Auth" asp-action="Logout" method="post">
+                                        <button type="submit" class="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <a asp-controller="Auth" asp-action="Login" class="text-sm font-medium text-gray-700 hover:text-brand-600">Sign in</a>
+                            <a asp-area="Identity" asp-page="/Account/Register" class="text-sm font-medium text-white bg-brand-600 px-3 py-1.5 rounded-lg hover:bg-brand-700">Register</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+    }
+
+    <div class="flex flex-1 w-full">
+        @if (SignInManager.IsSignedIn(User))
+        {
+            <partial name="_Sidebar" />
+        }
+        <main role="main" class="flex-1 min-w-0 px-4 py-6 @(SignInManager.IsSignedIn(User) ? "sm:ms-64" : "")">
+            @if (SignInManager.IsSignedIn(User) && ViewData["HidePageHeader"] as bool? != true)
+            {
+                <partial name="_PageHeader" />
+            }
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="~/lib/flowbite/flowbite.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

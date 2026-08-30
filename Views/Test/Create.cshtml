@@ -1,0 +1,332 @@
+@using Scholar.Common.Papers
+@using Scholar.Models.ViewModels
+@model PaperBuilderViewModel
+@{
+    ViewData["Title"] = "Create Paper";
+
+    var doc = new PaperDocumentViewModel
+    {
+        Settings = Model.Settings,
+        SubjectName = Model.SubjectName,
+        GradeName = Model.GradeName,
+        Sections = new()
+    };
+
+    string ctrlCls = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 p-2.5";
+}
+
+@* ===================== Toolbar ===================== *@
+<div class="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-white border border-gray-200 shadow-sm p-3 print:hidden">
+    <button type="button" id="open-menu"
+            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
+        Question's Menu
+    </button>
+
+    <div class="mx-2 h-6 w-px bg-gray-200"></div>
+
+    <input id="paper-title" class="@ctrlCls w-48" placeholder="Paper title" />
+    <input id="paper-type" class="@ctrlCls w-48" placeholder="Paper type" />
+    <input id="paper-time" type="number" min="0" class="@ctrlCls w-48" placeholder="Time" />
+
+    <div class="ms-auto flex items-center gap-4">
+        <span class="text-sm text-gray-600">
+            <span id="total-questions" class="font-semibold text-gray-900">0</span> Qs ·
+            <span id="total-marks" class="font-semibold text-gray-900">0</span> marks
+        </span>
+        <button type="button" id="print-now"
+                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            Print
+        </button>
+        <button type="button" id="save-paper"
+                class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
+            Save &amp; Print
+        </button>
+        <button type="button" id="cancel-paper"
+                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            Cancel
+        </button>
+    </div>
+</div>
+
+@* ===================== Paper canvas ===================== *@
+<div class="rounded-lg bg-gray-100 p-4 sm:p-8 print:bg-white print:p-0">
+    <partial name="_PaperCanvas" model="doc" />
+</div>
+
+@* ===================== Question's Menu modal ===================== *@
+<div id="menu-modal" class="hidden fixed inset-0 z-50 flex items-start justify-center overflow-hidden bg-black/50 p-4 print:hidden">
+    <div class="flex h-[calc(100vh-2rem)] w-full max-w-none flex-col rounded-lg bg-white shadow-xl">
+        <div class="flex items-center justify-between border-b border-gray-200 p-4">
+            <h3 class="text-base font-semibold text-gray-900">Question's Menu</h3>
+            <button type="button" class="close-menu rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700" aria-label="Close">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 14 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" /></svg>
+            </button>
+        </div>
+
+        <div class="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden p-4 md:grid-cols-[380px_1fr]">
+            @* Chapter / topic tree *@
+            <div class="flex min-h-0 flex-col rounded-lg border border-gray-200 p-3">
+                <label class="mb-2 flex items-center gap-2 text-sm font-medium text-gray-900">
+                    <input type="checkbox" id="select-all-chapters" class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                    Select All Chapters
+                </label>
+                <div class="flex-1 space-y-2 overflow-y-auto pr-1">
+                    @foreach (var chapter in Model.Chapters)
+                    {
+                        <div>
+                            <label class="flex items-center gap-2 text-sm text-gray-800">
+                                <input type="checkbox" class="chapter-check h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                                <span class="font-medium">@chapter.Number. @chapter.Name</span>
+                            </label>
+                            <div class="ms-6 mt-1 space-y-1">
+                                @foreach (var topic in chapter.Topics)
+                                {
+                                    <label class="flex items-center gap-2 text-sm text-gray-600">
+                                        <input type="checkbox" class="topic-check h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                                               value="@topic.Id" @(Model.PreselectedTopicIds.Contains(topic.Id) ? "checked" : "") />
+                                        <span>@topic.Number @topic.Name</span>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* Filters + results *@
+            <div class="flex min-h-0 flex-col">
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-700">Question Type</label>
+                        <select id="f-type" class="@ctrlCls w-full">
+                            <option value="0">MCQs</option>
+                            <option value="1">Short Questions</option>
+                            <option value="2">Long Questions</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-700">Question Source</label>
+                        <div id="source-dropdown" class="relative">
+                            <button type="button" id="source-toggle"
+                                    class="@ctrlCls flex w-full items-center justify-between text-left">
+                                <span id="source-label" class="truncate text-gray-900">Exercise</span>
+                                <svg class="ms-2 h-4 w-4 shrink-0 text-gray-500" fill="none" viewBox="0 0 10 6"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="m1 1 4 4 4-4" /></svg>
+                            </button>
+                            <div id="source-panel" class="absolute z-10 mt-1 hidden w-full rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                                <label class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50"><input type="checkbox" class="source-check h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" value="0" checked /> Exercise</label>
+                                <label class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50"><input type="checkbox" class="source-check h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" value="2" /> Past Papers</label>
+                                <label class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50"><input type="checkbox" class="source-check h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" value="1" /> Additional</label>
+                                <label class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50"><input type="checkbox" class="source-check h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" value="3" /> Conceptual</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-700">Required Questions</label>
+                        <input id="f-required" type="number" min="1" value="5" class="@ctrlCls w-full" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-gray-700">Each Question Marks</label>
+                        <input id="f-marks" type="number" min="1" value="1" class="@ctrlCls w-full" />
+                    </div>
+                    
+                </div>
+
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                    <button type="button" id="search-questions" class="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700">Search Questions</button>
+                    <button type="button" id="random-select" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Random Select</button>
+                    <span id="pick-count" class="ms-auto text-xs text-gray-500">Selected 0 Question(s)</span>
+                </div>
+
+                <div id="search-results" class="mt-3 flex-1 overflow-y-auto rounded-lg border border-gray-100">
+                    <p class="p-4 text-center text-sm text-gray-400">Set filters and click Search Questions.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 border-t border-gray-200 p-4">
+            <button type="button" class="close-menu rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
+            <button type="button" id="add-questions" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">Add Questions</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var subjectId = @Model.SubjectId;
+            var urls = {
+                search: '@Url.Action("SearchQuestions", "Test")',
+                render: '@Url.Action("RenderSections", "Test")',
+                save: '@Url.Action("Save", "Test")'
+            };
+
+            var sections = []; // { type, instruction, marksPerQuestion, questionIds: [] }
+
+            var modal = document.getElementById('menu-modal');
+            var results = document.getElementById('search-results');
+            var canvasSections = document.getElementById('paper-sections');
+
+            function show(el, on) { el.classList.toggle('hidden', !on); }
+            document.getElementById('open-menu').onclick = function () { show(modal, true); };
+            document.querySelectorAll('.close-menu').forEach(function (b) { b.onclick = function () { show(modal, false); }; });
+
+            // Select-all + chapter -> topic checkbox syncing.
+            document.getElementById('select-all-chapters').addEventListener('change', function (e) {
+                document.querySelectorAll('.chapter-check, .topic-check').forEach(function (c) { c.checked = e.target.checked; });
+            });
+            document.querySelectorAll('.chapter-check').forEach(function (chap) {
+                chap.addEventListener('change', function () {
+                    var topics = chap.closest('div').querySelectorAll('.topic-check');
+                    topics.forEach(function (t) { t.checked = chap.checked; });
+                });
+            });
+
+            // Source multi-select dropdown: toggle panel, close on outside click,
+            // and keep the button label in sync with the checked sources.
+            var sourceToggle = document.getElementById('source-toggle');
+            var sourcePanel = document.getElementById('source-panel');
+            var sourceLabel = document.getElementById('source-label');
+
+            sourceToggle.addEventListener('click', function (e) {
+                e.stopPropagation();
+                sourcePanel.classList.toggle('hidden');
+            });
+            document.addEventListener('click', function (e) {
+                if (!document.getElementById('source-dropdown').contains(e.target)) {
+                    sourcePanel.classList.add('hidden');
+                }
+            });
+            function updateSourceLabel() {
+                var picked = Array.prototype.slice.call(sourcePanel.querySelectorAll('.source-check:checked'))
+                    .map(function (c) { return c.parentElement.textContent.trim(); });
+                sourceLabel.textContent = picked.length ? picked.join(', ') : 'No source selected';
+            }
+            sourcePanel.addEventListener('change', updateSourceLabel);
+            updateSourceLabel();
+
+            function checkedValues(selector) {
+                return Array.prototype.slice.call(document.querySelectorAll(selector))
+                    .filter(function (c) { return c.checked; })
+                    .map(function (c) { return parseInt(c.value, 10); });
+            }
+
+            function updatePickCount() {
+                var n = results.querySelectorAll('.pick-question:checked').length;
+                document.getElementById('pick-count').textContent = 'Selected ' + n + ' Question(s)';
+            }
+            results.addEventListener('change', function (e) {
+                if (e.target.classList.contains('pick-question')) updatePickCount();
+            });
+
+            // ---- Search ----
+            document.getElementById('search-questions').onclick = function () {
+                var topicIds = checkedValues('.topic-check');
+                if (topicIds.length === 0) { results.innerHTML = '<p class="p-4 text-center text-sm text-gray-500">Pick at least one chapter/topic.</p>'; return; }
+                var p = new URLSearchParams();
+                topicIds.forEach(function (id) { p.append('topicIds', id); });
+                p.append('type', document.getElementById('f-type').value);
+                checkedValues('.source-check').forEach(function (c) { p.append('categories', c); });
+                results.innerHTML = '<p class="p-4 text-center text-sm text-gray-400">Searching…</p>';
+                fetch(urls.search + '?' + p.toString())
+                    .then(function (r) { return r.text(); })
+                    .then(function (h) { results.innerHTML = h; updatePickCount(); });
+            };
+
+            // ---- Random select ----
+            document.getElementById('random-select').onclick = function () {
+                var boxes = Array.prototype.slice.call(results.querySelectorAll('.pick-question'));
+                boxes.forEach(function (b) { b.checked = false; });
+                var need = parseInt(document.getElementById('f-required').value, 10) || 0;
+                for (var i = boxes.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = boxes[i]; boxes[i] = boxes[j]; boxes[j] = t; }
+                boxes.slice(0, need).forEach(function (b) { b.checked = true; });
+                updatePickCount();
+            };
+
+            // ---- Add questions as a section (keeps the menu open) ----
+            document.getElementById('add-questions').onclick = function () {
+                var ids = Array.prototype.slice.call(results.querySelectorAll('.pick-question:checked')).map(function (c) { return parseInt(c.value, 10); });
+                if (ids.length === 0) { alert('Select at least one question.'); return; }
+                sections.push({
+                    type: parseInt(document.getElementById('f-type').value, 10),
+                    marksPerQuestion: parseInt(document.getElementById('f-marks').value, 10) || 1,
+                    questionIds: ids
+                });
+
+                // Add to the canvas live, then reset the menu for the next section.
+                // The modal stays open until the user clicks Close.
+                renderSections();
+                results.innerHTML = '';
+                document.getElementById('pick-count').textContent = 'Selected 0 Question(s)';
+            };
+
+            // ---- Delete section (delegated on canvas) ----
+            canvasSections.addEventListener('click', function (e) {
+                if (!e.target.classList.contains('section-delete')) return;
+                var idx = parseInt(e.target.getAttribute('data-section-index'), 10);
+                sections.splice(idx, 1);
+                renderSections();
+            });
+
+            function totals() {
+                var q = 0, m = 0;
+                sections.forEach(function (s) { q += s.questionIds.length; m += s.questionIds.length * (s.marksPerQuestion || 0); });
+                document.getElementById('total-questions').textContent = q;
+                document.getElementById('total-marks').textContent = m;
+            }
+
+            function renderSections() {
+                totals();
+                fetch(urls.render, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sections)
+                })
+                    .then(function (r) { return r.text(); })
+                    .then(function (h) { canvasSections.innerHTML = h; });
+            }
+
+            // ---- Save & print ----
+            document.getElementById('save-paper').onclick = function () {
+                var title = document.getElementById('paper-title').value.trim();
+                if (!title) { alert('Enter a paper title first.'); return; }
+                if (sections.length === 0) { alert('Add at least one section.'); return; }
+                fetch(urls.save, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        subjectId: subjectId,
+                        title: title,
+                        paperType: document.getElementById('paper-type').value,
+                        durationMinutes: parseInt(document.getElementById('paper-time').value, 10) || 0,
+                        sections: sections
+                    })
+                }).then(function (r) {
+                    if (!r.ok) { return r.json().then(function (e) { throw new Error(e.message || 'Save failed.'); }); }
+                    return r.json();
+                }).then(function (data) {
+                    window.location.href = data.redirectUrl;
+                }).catch(function (err) { alert(err.message); });
+            };
+
+            // ---- Print without saving (prints the current live canvas) ----
+            document.getElementById('print-now').onclick = function () {
+                if (sections.length === 0) { alert('Add at least one section before printing.'); return; }
+                window.print();
+            };
+
+            document.getElementById('cancel-paper').onclick = function () {
+                if (sections.length === 0 || confirm('Discard this paper?')) {
+                    window.location.href = '@Url.Action("Index", "Dashboard")';
+                }
+            };
+        })();
+    </script>
+
+    <style>
+        @@media print {
+            header, aside#sidebar { display: none !important; }
+            main { padding: 0 !important; }
+            .paper-sheet { box-shadow: none !important; }
+        }
+    </style>
+}

@@ -1,0 +1,17 @@
+@model PagedResult<Institute>
+@{
+    ViewData["Title"] = "Institutes";
+
+    TableModel table = TableModel.For(Model)
+                                 .Title("Institutes")
+                                 .WithSearch()
+                                 .WithCheckbox(show: true, valueProperty: nameof(Institute.Id))
+                                 .WithRowMenu()
+                                 .WithAction(TableActions.AddInstitute())
+                                 .Column("Name", nameof(Institute.Name), sortable: true)
+                                 .Column("Address", nameof(Institute.Address))
+                                 .Column("Status", nameof(Institute.IsActive), sortable: true)
+                                 .Build();
+}
+
+@await Component.InvokeAsync("DataTable", new { model = table })

@@ -13,7 +13,12 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
 
-builder.Services.AddDbContext<ScholarDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<ScholarDbContext>(options =>
+    options.UseSqlServer(connectionString, sql =>
+        sql.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(15),
+            errorNumbersToAdd: null)));
 
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
                 .AddRoles<IdentityRole>()
@@ -46,11 +51,6 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
 WebApplication? app = builder.Build();
-
-using (var scope = app.Services.CreateScope())
-{
-    await RoleSeeder.SeedRolesAsync(scope.ServiceProvider);
-}
 
 if (!app.Environment.IsDevelopment())
 {

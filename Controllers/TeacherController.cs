@@ -21,7 +21,7 @@ namespace Scholar.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index([FromQuery] PageParameters tableParams = null)
+        public async Task<IActionResult> Index([FromQuery] PageParameters? tableParams = null)
         {
             tableParams ??= new PageParameters();
 
@@ -37,8 +37,8 @@ namespace Scholar.Controllers
             {
                 string term = tableParams.Search;
                 teachers = teachers.Where(t =>
-                    t.User.FullName.Contains(term) ||
-                    t.User.Email.Contains(term) ||
+                    (t.User.FullName != null && t.User.FullName.Contains(term)) ||
+                    (t.User.Email != null && t.User.Email.Contains(term)) ||
                     t.Subject.Name.Contains(term) ||
                     t.Grade.Name.Contains(term));
             }

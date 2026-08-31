@@ -30,7 +30,7 @@ namespace Scholar.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index([FromQuery] PageParameters tableParams = null)
+        public async Task<IActionResult> Index([FromQuery] PageParameters? tableParams = null)
         {
             tableParams ??= new PageParameters();
 

@@ -50,7 +50,7 @@ namespace Scholar.Controllers
 
         [HttpGet]
         [Authorize(Roles = Roles.SuperAdmin)]
-        public async Task<IActionResult> List([FromQuery] PageParameters tableParams = null)
+        public async Task<IActionResult> List([FromQuery] PageParameters? tableParams = null)
         {
             tableParams ??= new PageParameters();
 

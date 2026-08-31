@@ -29,7 +29,7 @@ builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ClaimsP
 // Generic repository available for every entity type.
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-builder.Services.AddAutoMapper(typeof(Program).Assembly);
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(Program).Assembly));
 
 builder.Services.Configure<R2Options>(builder.Configuration.GetSection(R2Options.SectionName));
 

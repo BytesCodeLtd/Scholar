@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Scholar.Common.Identity;
 using Scholar.Constants;
+using Scholar.Enums;
 using Scholar.Models;
 using Scholar.Models.ViewModels;
 using Scholar.Repositories;
@@ -14,11 +15,16 @@ namespace Scholar.Controllers
     {
         private readonly IRepository<Test> _testRepository;
         private readonly IRepository<Institute> _instituteRepository;
+        private readonly IRepository<Question> _questionRepository;
 
-        public DashboardController(IRepository<Test> test, IRepository<Institute> institute)
+        public DashboardController(
+            IRepository<Test> test,
+            IRepository<Institute> institute,
+            IRepository<Question> question)
         {
             _testRepository = test;
             _instituteRepository = institute;
+            _questionRepository = question;
         }
 
         public async Task<IActionResult> Index()
@@ -39,12 +45,24 @@ namespace Scholar.Controllers
             }
 
             model.TotalTests = await tests.CountAsync();
+            model.SavedTests = await tests.CountAsync(t => t.IsActive);
             model.TestsThisMonth = await tests.CountAsync(t => t.CreatedAt >= monthStart && t.CreatedAt < nextMonthStart);
+
+            Dictionary<QuestionType, int> questionsByType = await _questionRepository.Query()
+                                                                                     .Where(q => q.IsActive)
+                                                                                     .GroupBy(q => q.Type)
+                                                                                     .Select(g => new { Type = g.Key, Count = g.Count() })
+                                                                                     .ToDictionaryAsync(x => x.Type, x => x.Count);
+
+            model.TotalMcqs = questionsByType.GetValueOrDefault(QuestionType.Mcq);
+            model.TotalShortQuestions = questionsByType.GetValueOrDefault(QuestionType.Short);
+            model.TotalLongQuestions = questionsByType.GetValueOrDefault(QuestionType.Long);
 
             if (isSuperAdmin)
             {
                 model.IsSuperAdmin = true;
                 model.TotalInstitutes = await _instituteRepository.Query().CountAsync();
+                model.ActiveInstitutes = await _instituteRepository.Query().CountAsync(i => i.IsActive);
                 model.InstitutesThisMonth = await _instituteRepository.Query()
                                                                       .CountAsync(i => i.CreatedAt >= monthStart && i.CreatedAt < nextMonthStart);
             }

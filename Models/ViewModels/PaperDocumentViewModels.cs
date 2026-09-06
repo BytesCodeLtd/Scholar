@@ -45,10 +45,19 @@ namespace Scholar.Models.ViewModels
     public class SavePaperRequest
     {
         public int SubjectId { get; set; }
+
+        public int? InstituteId { get; set; }
+
         public string Title { get; set; } = string.Empty;
         public string? PaperType { get; set; }
         public int DurationMinutes { get; set; }
         public List<PaperSectionInput> Sections { get; set; } = new();
+    }
+
+    public class RenderSectionsRequest
+    {
+        public int? InstituteId { get; set; }
+        public List<PaperSectionInput> Sections { get; set; } = [];
     }
 
     public class PaperSectionInput

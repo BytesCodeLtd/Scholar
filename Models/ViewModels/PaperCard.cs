@@ -13,6 +13,9 @@ namespace Scholar.Models.ViewModels
 
         public string Subject { get; set; } = string.Empty;
 
+        // Owning institute — shown on the cards when a super admin views all papers.
+        public string Institute { get; set; } = string.Empty;
+
         public int TotalMarks { get; set; }
 
         public int DurationMinutes { get; set; }

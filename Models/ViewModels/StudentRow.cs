@@ -17,5 +17,7 @@ namespace Scholar.Models.ViewModels
         public string? Phone { get; set; }
 
         public string? Institute { get; set; }
+
+        public bool IsActive { get; set; }
     }
 }

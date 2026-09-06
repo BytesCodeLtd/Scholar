@@ -40,14 +40,23 @@ namespace Scholar.Controllers
         [HttpGet]
         public async Task<IActionResult> Index()
         {
+            bool isSuperAdmin = User.IsInRole(Constants.Roles.SuperAdmin);
             int? instituteId = User.GetInstituteId();
+
+            ViewBag.IsSuperAdmin = isSuperAdmin;
 
             List<PaperCard> papers = [];
 
-            if (instituteId is not null)
+            if (isSuperAdmin || instituteId is not null)
             {
-                papers = await _tests.Query()
-                                     .Where(t => t.IsActive && t.InstituteId == instituteId)
+                IQueryable<Test> query = _tests.Query().Where(t => t.IsActive);
+
+                if (!isSuperAdmin)
+                {
+                    query = query.Where(t => t.InstituteId == instituteId);
+                }
+
+                papers = await query
                                      .OrderByDescending(t => t.CreatedAt)
                                      .Select(t => new PaperCard
                                      {
@@ -56,6 +65,7 @@ namespace Scholar.Controllers
                                          Type = t.Type,
                                          Date = t.Date,
                                          Subject = t.Subject.Name,
+                                         Institute = t.Institute.Name,
                                          TotalMarks = t.TotalMarks,
                                          DurationMinutes = t.DurationMinutes,
                                          QuestionCount = t.Questions.Count(q => q.IsActive),
@@ -69,13 +79,15 @@ namespace Scholar.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int[] selectedTopicIds, int subjectId)
+        public async Task<IActionResult> Create(int[] selectedTopicIds, int subjectId, int? instituteId)
         {
-            Branding? branding = await LoadBrandingAsync();
+            Branding? branding = await LoadBrandingAsync(instituteId);
 
             if (branding is null)
             {
-                TempData["Error"] = "Your account isn't linked to an institute, so papers can't be branded.";
+                TempData["Error"] = User.IsInRole(Constants.Roles.SuperAdmin)
+                    ? "Select an institute to generate a paper for."
+                    : "Your account isn't linked to an institute, so papers can't be branded.";
                 return RedirectToAction("Index", "Dashboard");
             }
 
@@ -100,6 +112,7 @@ namespace Scholar.Controllers
                 GradeId = subject.GradeId,
                 SubjectName = subject.Name,
                 GradeName = subject.Grade.Name,
+                InstituteId = branding.Institute.Id,
                 Settings = branding.Settings,
                 Chapters = chapters,
                 PreselectedTopicIds = [.. (selectedTopicIds ?? [])]
@@ -133,9 +146,9 @@ namespace Scholar.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> RenderSections([FromBody] List<PaperSectionInput> sections)
+        public async Task<IActionResult> RenderSections([FromBody] RenderSectionsRequest request)
         {
-            Branding? branding = await LoadBrandingAsync();
+            Branding? branding = await LoadBrandingAsync(request?.InstituteId);
 
             if (branding is null)
             {
@@ -145,7 +158,7 @@ namespace Scholar.Controllers
             PaperSectionsViewModel vm = new()
             {
                 Settings = branding.Settings,
-                Sections = await BuildSectionModelsAsync(sections ?? new())
+                Sections = await BuildSectionModelsAsync(request?.Sections ?? new())
             };
 
             return PartialView("_PaperSectionsList", vm);
@@ -154,7 +167,7 @@ namespace Scholar.Controllers
         [HttpPost]
         public async Task<IActionResult> Save([FromBody] SavePaperRequest request)
         {
-            Branding? branding = await LoadBrandingAsync();
+            Branding? branding = await LoadBrandingAsync(request?.InstituteId);
 
             if (branding is null)
             {
@@ -283,9 +296,9 @@ namespace Scholar.Controllers
 
         private sealed record Branding(Institute Institute, PaperRenderSettings Settings);
 
-        private async Task<Branding?> LoadBrandingAsync()
+        private async Task<Branding?> LoadBrandingAsync(int? requestedInstituteId = null)
         {
-            int? instituteId = User.GetInstituteId();
+            int? instituteId = ResolveInstituteId(requestedInstituteId);
 
             if (instituteId is null)
             {
@@ -306,6 +319,11 @@ namespace Scholar.Controllers
 
             return new Branding(institute, PaperRenderSettings.From(settings, institute));
         }
+
+        private int? ResolveInstituteId(int? requestedInstituteId)
+            => User.IsInRole(Constants.Roles.SuperAdmin)
+                ? requestedInstituteId
+                : User.GetInstituteId();
 
         private async Task<List<PaperSectionRenderModel>> BuildSectionModelsAsync(List<PaperSectionInput> inputs)
         {

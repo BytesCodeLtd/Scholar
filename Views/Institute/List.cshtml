@@ -6,7 +6,7 @@
                                  .Title("Institutes")
                                  .WithSearch()
                                  .WithCheckbox(show: true, valueProperty: nameof(Institute.Id))
-                                 .WithRowMenu()
+                                 .WithRowMenu(nameof(Institute.Id), RowMenus.Institute())
                                  .WithAction(TableActions.AddInstitute())
                                  .Column("Name", nameof(Institute.Name), sortable: true)
                                  .Column("Address", nameof(Institute.Address))

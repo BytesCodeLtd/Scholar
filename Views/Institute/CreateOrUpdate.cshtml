@@ -1,0 +1,120 @@
+@model Scholar.Models.ViewModels.CreateUserViewModel
+@{
+    bool isUpdate = Model.InstituteId is not null;
+    ViewData["Title"] = isUpdate ? "Update institute" : "Add institute";
+    ViewData["PageSubtitle"] = isUpdate
+        ? "Update the institute and its admin account."
+        : "Create an institute and its admin account.";
+}
+
+<div class="w-full rounded-lg bg-white border border-gray-200 shadow-sm p-6">
+    <form asp-controller="Institute" asp-action="CreateOrUpdate" method="post" enctype="multipart/form-data" class="space-y-5">
+        <input type="hidden" asp-for="InstituteId" />
+        <div asp-validation-summary="ModelOnly"
+             class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3"></div>
+
+        <div>
+            <span class="block mb-1 text-sm font-medium text-gray-900">Institute Logo</span>
+            <input type="hidden" asp-for="LogoUrl" />
+
+            @{
+                bool hasLogo = !string.IsNullOrEmpty(Model.LogoUrl);
+            }
+            @* Click the block to open the hidden file picker. *@
+            <label for="Logo"
+                   class="group relative flex h-44 w-44 cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:border-brand-500 hover:bg-brand-50">
+                <img id="logo-preview" src="@Model.LogoUrl" alt="Institute logo"
+                     class="@(hasLogo ? "" : "hidden") h-full w-full object-contain p-2" />
+                <div id="logo-placeholder"
+                     class="@(hasLogo ? "hidden" : "") flex flex-col items-center gap-2 text-gray-400 group-hover:text-brand-600">
+                    <svg class="h-10 w-10" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 4v12m0-12 4 4m-4-4-4 4" />
+                    </svg>
+                    <span class="text-xs font-medium">Click to upload logo</span>
+                </div>
+            </label>
+
+            <input asp-for="Logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="hidden" />
+            <p class="mt-1 text-xs text-gray-500">PNG, JPG, WEBP, or SVG. Max 2 MB. Optional.</p>
+            <span asp-validation-for="Logo" class="mt-1 block text-sm text-red-600"></span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label asp-for="FullName" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="FullName"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400" />
+                <span asp-validation-for="FullName" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="Email" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="Email" autocomplete="off"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400"
+                       placeholder="institute@institute.com" />
+                <span asp-validation-for="Email" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="InstituteName" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="InstituteName"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400" />
+                <span asp-validation-for="InstituteName" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="Role" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <select asp-for="Role"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400">
+                    <option value="">Select role</option>
+                    @foreach (string role in Roles.All)
+                    {
+                        <option value="@role">@role</option>
+                    }
+                </select>
+                <span asp-validation-for="Role" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="InstituteAddress" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="InstituteAddress"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400" />
+                <span asp-validation-for="InstituteAddress" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+
+            <div>
+                <label asp-for="Password" class="block mb-1 text-sm font-medium text-gray-900"></label>
+                <input asp-for="Password" autocomplete="new-password"
+                       class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5 placeholder:text-gray-400"
+                       placeholder="*******" />
+                @if (isUpdate)
+                {
+                    <p class="mt-1 text-xs text-gray-500">Leave blank to keep the current password.</p>
+                }
+                <span asp-validation-for="Password" class="mt-1 block text-sm text-red-600"></span>
+            </div>
+        </div>
+
+        <button type="submit"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:ring-4 focus:ring-brand-100">
+            @(isUpdate ? "Update institute" : "Create institute")
+        </button>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Show a live preview of the picked logo inside the upload block.
+        document.getElementById('Logo').addEventListener('change', function (e) {
+            var file = e.target.files && e.target.files[0];
+            if (!file) return;
+            var img = document.getElementById('logo-preview');
+            var placeholder = document.getElementById('logo-placeholder');
+            img.src = URL.createObjectURL(file);
+            img.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+        });
+    </script>
+}

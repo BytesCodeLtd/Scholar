@@ -16,7 +16,7 @@ GO
 INSERT INTO dbo.Boards ([Name])
 SELECT v.[Name]
 FROM (VALUES
-    (N'PECTA'),
+    (N'PECTAA'),
     (N'KPTB'),
     (N'FEDERAL')
 ) AS v([Name])

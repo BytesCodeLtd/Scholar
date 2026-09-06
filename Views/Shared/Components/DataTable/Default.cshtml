@@ -59,6 +59,25 @@
     };
 
     const string ActionBase = "inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg";
+
+    // Resolve a row-menu item's URL, appending the row's key as a route value.
+    string RowMenuItemHref(Scholar.Common.Tables.RowMenuItem item, object row)
+    {
+        var rv = new RouteValueDictionary();
+        if (item.RouteValues is not null)
+        {
+            foreach (var kv in item.RouteValues) rv[kv.Key] = kv.Value;
+        }
+        var key = Model.RowMenuValue(row);
+        if (key is not null) rv[item.RouteKey] = key;
+        return Url.Action(item.Action, item.Controller, rv) ?? "#";
+    }
+
+    string RowMenuItemClasses(Scholar.Enums.RowMenuItemStyle style) => style switch
+    {
+        Scholar.Enums.RowMenuItemStyle.Danger => "text-red-600 hover:bg-red-50",
+        _ => "text-gray-700 hover:bg-gray-100"
+    };
 }
 
 <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
@@ -185,13 +204,58 @@
                             @if (Model.ShowRowMenu)
                             {
                                 <td class="px-4 py-3">
-                                    <button type="button"
-                                            class="inline-flex items-center justify-center w-8 h-8 text-gray-500 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-100">
-                                        <span class="sr-only">Open row menu</span>
-                                        <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
-                                            <path d="M8 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
-                                        </svg>
-                                    </button>
+                                    @if (Model.RowMenuItems.Count > 0)
+                                    {
+                                        var menuId = $"row-menu-{Model.RowMenuValue(row)}";
+                                        <button type="button" data-dropdown-toggle="@menuId" data-dropdown-placement="bottom-start"
+                                                class="inline-flex items-center justify-center w-8 h-8 text-gray-500 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-100">
+                                            <span class="sr-only">Open row menu</span>
+                                            <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                                                <path d="M8 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+                                            </svg>
+                                        </button>
+                                        <div id="@menuId" class="z-20 hidden w-44 bg-white border border-gray-100 rounded-lg shadow-lg py-1">
+                                            @foreach (var item in Model.RowMenuItems.Where(i => Model.IsRowMenuItemVisible(i, row)))
+                                            {
+                                                var itemCss = $"flex w-full items-center gap-2 px-4 py-2 text-sm text-left {RowMenuItemClasses(item.Style)}";
+                                                @if (string.Equals(item.Method, "post", StringComparison.OrdinalIgnoreCase))
+                                                {
+                                                    <form method="post" action="@RowMenuItemHref(item, row)"
+                                                          onsubmit="@(item.Confirm is null ? null : $"return confirm('{item.Confirm}');")">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="@itemCss">
+                                                            @if (!string.IsNullOrEmpty(item.IconSvg))
+                                                            {
+                                                                @Html.Raw(item.IconSvg)
+                                                            }
+                                                            @item.Label
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <a href="@RowMenuItemHref(item, row)" class="@itemCss"
+                                                       onclick="@(item.Confirm is null ? null : $"return confirm('{item.Confirm}');")">
+                                                        @if (!string.IsNullOrEmpty(item.IconSvg))
+                                                        {
+                                                            @Html.Raw(item.IconSvg)
+                                                        }
+                                                        @item.Label
+                                                    </a>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="inline-flex items-center justify-center w-8 h-8 text-gray-500 rounded-lg hover:bg-gray-100 focus:ring-4 focus:ring-gray-100">
+                                            <span class="sr-only">Open row menu</span>
+                                            <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                                                <path d="M8 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Zm0 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+                                            </svg>
+                                        </button>
+                                    }
                                 </td>
                             }
                             @foreach (var col in Model.Columns)

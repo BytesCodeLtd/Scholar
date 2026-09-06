@@ -1,4 +1,5 @@
 using Scholar.Common.Paging;
+using Scholar.Enums;
 
 namespace Scholar.Common.Tables
 {
@@ -11,18 +12,6 @@ namespace Scholar.Common.Tables
         public bool Sortable { get; set; }
     }
 
-    public enum TableActionStyle
-    {
-        Primary,
-        Secondary,
-        Danger
-    }
-
-    /// <summary>
-    /// A button rendered in the table header (next to the search box). Point it at a
-    /// controller/action (route values optional) or a raw <see cref="Url"/>. GET actions
-    /// render as links; POST actions render as a small form so anti-forgery works.
-    /// </summary>
     public class TableAction
     {
         public string Label { get; set; } = string.Empty;
@@ -42,6 +31,31 @@ namespace Scholar.Common.Tables
         public string? IconSvg { get; set; }
 
         public string? Confirm { get; set; }
+    }
+
+    public class RowMenuItem
+    {
+        public string Label { get; set; } = string.Empty;
+
+        public string? Controller { get; set; }
+
+        public string Action { get; set; } = string.Empty;
+
+        public string RouteKey { get; set; } = "id";
+
+        public IDictionary<string, string?>? RouteValues { get; set; }
+
+        public string Method { get; set; } = "get";
+
+        public RowMenuItemStyle Style { get; set; } = RowMenuItemStyle.Default;
+
+        public string? IconSvg { get; set; }
+
+        public string? Confirm { get; set; }
+
+        public string? VisibleWhenProperty { get; set; }
+
+        public bool VisibleWhenValue { get; set; } = true;
     }
 
     public class TableModel
@@ -66,6 +80,10 @@ namespace Scholar.Common.Tables
 
         public bool ShowRowMenu { get; init; }
 
+        public string? RowKeyProperty { get; init; }
+
+        public List<RowMenuItem> RowMenuItems { get; init; } = [];
+
         public string? Title { get; init; }
 
         public List<TableAction> Actions { get; init; } = [];
@@ -74,6 +92,20 @@ namespace Scholar.Common.Tables
 
         public object? CheckboxValue(object row) =>
             CheckboxValueProperty is null ? null : row.GetType().GetProperty(CheckboxValueProperty)?.GetValue(row);
+
+        public object? RowMenuValue(object row) =>
+            RowKeyProperty is null ? null : row.GetType().GetProperty(RowKeyProperty)?.GetValue(row);
+
+        public bool IsRowMenuItemVisible(RowMenuItem item, object row)
+        {
+            if (item.VisibleWhenProperty is null)
+            {
+                return true;
+            }
+
+            object? value = row.GetType().GetProperty(item.VisibleWhenProperty)?.GetValue(row);
+            return value is bool flag && flag == item.VisibleWhenValue;
+        }
 
         public static TableModelBuilder<T> For<T>(PagedResult<T> paged) => new(paged);
     }
@@ -86,10 +118,13 @@ namespace Scholar.Common.Tables
 
         private readonly List<TableAction> _actions = [];
 
+        private readonly List<RowMenuItem> _rowMenuItems = [];
+
         private bool _showCheckbox;
         private string? _checkboxValueProperty;
         private bool _showSearch;
         private bool _showRowMenu;
+        private string? _rowKeyProperty;
         private string? _title;
 
         public TableModelBuilder(PagedResult<T> paged) => _paged = paged;
@@ -122,6 +157,14 @@ namespace Scholar.Common.Tables
         public TableModelBuilder<T> WithRowMenu(bool show = true)
         {
             _showRowMenu = show;
+            return this;
+        }
+
+        public TableModelBuilder<T> WithRowMenu(string keyProperty, params RowMenuItem[] items)
+        {
+            _showRowMenu = true;
+            _rowKeyProperty = keyProperty;
+            _rowMenuItems.AddRange(items);
             return this;
         }
 
@@ -166,6 +209,8 @@ namespace Scholar.Common.Tables
             CheckboxValueProperty = _checkboxValueProperty,
             ShowSearch = _showSearch,
             ShowRowMenu = _showRowMenu,
+            RowKeyProperty = _rowKeyProperty,
+            RowMenuItems = _rowMenuItems,
             Title = _title,
             Actions = _actions
         };

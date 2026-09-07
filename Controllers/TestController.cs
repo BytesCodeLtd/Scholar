@@ -100,7 +100,8 @@ namespace Scholar.Controllers
                 return NotFound();
             }
 
-            List<Chapter> chapters = await _chapters.Query().AsNoTracking()
+            List<Chapter> chapters = await _chapters.Query()
+                                                    .AsNoTracking()
                                                     .Where(c => c.SubjectId == subjectId)
                                                     .Include(c => c.Topics)
                                                     .OrderBy(c => c.Number)
@@ -165,6 +166,38 @@ namespace Scholar.Controllers
         }
 
         [HttpPost]
+        public async Task<IActionResult> RenderCanvas([FromBody] RenderCanvasRequest request)
+        {
+            Branding? branding = await LoadBrandingAsync(request?.InstituteId);
+
+            if (branding is null)
+            {
+                return Forbid();
+            }
+
+            // Institute branding stays authoritative; the rail only overrides
+            // the user-editable slice.
+            PaperRenderSettings settings = branding.Settings;
+            request?.Settings?.ApplyTo(settings);
+
+            List<PaperSectionRenderModel> sections = await BuildSectionModelsAsync(request?.Sections ?? new());
+
+            PaperDocumentViewModel vm = new()
+            {
+                Title = request?.Title ?? string.Empty,
+                PaperType = request?.PaperType,
+                DurationMinutes = request?.DurationMinutes ?? 0,
+                SubjectName = request?.SubjectName ?? string.Empty,
+                GradeName = request?.GradeName ?? string.Empty,
+                TotalMarks = sections.Sum(m => m.TotalMarks),
+                Settings = settings,
+                Sections = sections
+            };
+
+            return PartialView("_PaperCanvas", vm);
+        }
+
+        [HttpPost]
         public async Task<IActionResult> Save([FromBody] SavePaperRequest request)
         {
             Branding? branding = await LoadBrandingAsync(request?.InstituteId);
@@ -190,6 +223,11 @@ namespace Scholar.Controllers
 
             int totalMarks = models.Sum(m => m.TotalMarks);
 
+            // Freeze the live rail settings into the snapshot so the saved paper
+            // prints exactly as previewed; fall back to institute defaults.
+            PaperRenderSettings snapshot = branding.Settings;
+            request.Settings?.ApplyTo(snapshot);
+
             Test test = new()
             {
                 Title = request.Title.Trim(),
@@ -199,7 +237,7 @@ namespace Scholar.Controllers
                 SubjectId = request.SubjectId,
                 TotalMarks = totalMarks,
                 DurationMinutes = request.DurationMinutes,
-                PaperSettingsSnapshot = JsonSerializer.Serialize(branding.Settings)
+                PaperSettingsSnapshot = JsonSerializer.Serialize(snapshot)
             };
 
             int order = 1;

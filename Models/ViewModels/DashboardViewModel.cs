@@ -23,5 +23,9 @@ namespace Scholar.Models.ViewModels
         public int ActiveInstitutes { get; set; }
 
         public int InstitutesThisMonth { get; set; }
+
+        public int TotalStudents { get; set; }
+
+        public int StudentsThisMonth { get; set; }
     }
 }

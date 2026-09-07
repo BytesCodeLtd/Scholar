@@ -78,9 +78,22 @@
         Scholar.Enums.RowMenuItemStyle.Danger => "text-red-600 hover:bg-red-50",
         _ => "text-gray-700 hover:bg-gray-100"
     };
+
+    // Resolve a cell button's URL, appending the row's key as a route value.
+    string CellButtonHref(TableCellButton btn, object row)
+    {
+        var rv = new RouteValueDictionary();
+        if (btn.RouteValues is not null)
+        {
+            foreach (var kv in btn.RouteValues) rv[kv.Key] = kv.Value;
+        }
+        var key = Model.RowKey(row);
+        if (key is not null) rv[btn.RouteKey] = key;
+        return Url.Action(btn.Action, btn.Controller, rv) ?? "#";
+    }
 }
 
-<div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col sm:flex-1 sm:min-h-0">
     @if (!string.IsNullOrEmpty(Model.Title) || Model.ShowSearch || Model.Actions.Count > 0)
     {
         <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b bg-gray-50 border-gray-200">
@@ -146,9 +159,9 @@
             </div>
         </div>
     }
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto sm:overflow-auto sm:flex-1 sm:min-h-0">
         <table class="w-full text-sm text-left text-gray-700">
-            <thead class="text-xs uppercase text-gray-500 border-b border-gray-200">
+            <thead class="text-xs uppercase text-gray-500 border-b border-gray-200 sm:sticky sm:top-0 sm:z-10 sm:bg-white">
                 <tr>
                     @if (Model.ShowCheckbox)
                     {
@@ -262,7 +275,42 @@
                             {
                                 var value = Model.Cell(row, col);
                                 <td class="px-4 py-3">
-                                    @if (value is bool flag)
+                                    @if (col.Buttons is { Count: > 0 })
+                                    {
+                                        <div class="flex flex-wrap gap-1.5">
+                                            @foreach (var btn in col.Buttons)
+                                            {
+                                                var active = Model.IsButtonActive(col, btn, row);
+                                                var btnCss = $"inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition {(active ? btn.ActiveCss : btn.InactiveCss)}";
+                                                @if (string.Equals(btn.Method, "post", StringComparison.OrdinalIgnoreCase))
+                                                {
+                                                    <form method="post" action="@CellButtonHref(btn, row)" class="inline"
+                                                          onsubmit="@(btn.Confirm is null ? null : $"return confirm('{btn.Confirm}');")">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="@btnCss">
+                                                            @if (!string.IsNullOrEmpty(btn.IconSvg))
+                                                            {
+                                                                @Html.Raw(btn.IconSvg)
+                                                            }
+                                                            @btn.Text
+                                                        </button>
+                                                    </form>
+                                                }
+                                                else
+                                                {
+                                                    <a href="@CellButtonHref(btn, row)" class="@btnCss"
+                                                       onclick="@(btn.Confirm is null ? null : $"return confirm('{btn.Confirm}');")">
+                                                        @if (!string.IsNullOrEmpty(btn.IconSvg))
+                                                        {
+                                                            @Html.Raw(btn.IconSvg)
+                                                        }
+                                                        @btn.Text
+                                                    </a>
+                                                }
+                                            }
+                                        </div>
+                                    }
+                                    else if (value is bool flag)
                                     {
                                         <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium @(flag ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600")">
                                             @(flag ? "Active" : "Inactive")

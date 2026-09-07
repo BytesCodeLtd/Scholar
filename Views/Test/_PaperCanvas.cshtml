@@ -5,13 +5,16 @@
     var s = Model.Settings;
     string headerText = $"font-size:{s.HeaderFontSize}pt;font-family:{s.FontFamilyCss(s.HeaderFontStyle)};color:{s.FontColorHex};font-weight:700;line-height:1.15;";
     string logoStyle = $"height:{s.LogoHeight}px;width:{s.LogoWidth}px;object-fit:contain;";
+    string addressStyle = $"color:{s.FontColorHex};font-size:11pt;letter-spacing:0.02em;";
+    bool hasLogo = !string.IsNullOrEmpty(s.LogoUrl);
+    bool logoInTable = s.HeaderLayout == 1;
 
     var sectionsModel = new PaperSectionsViewModel { Settings = s, Sections = Model.Sections };
 }
 
 <div class="paper-sheet relative w-full bg-white text-black shadow-sm" style="padding:40px 40px;">
 
-    @* ---- Watermark ---- *@
+    @* Watermark *@
     @if (s.Watermark == Scholar.Enums.WatermarkType.Picture && !string.IsNullOrEmpty(s.LogoUrl))
     {
         <div class="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
@@ -28,16 +31,49 @@
     }
 
     <div class="relative">
-        @* ---- Title block (institute name + address, dashed border) ---- *@
-        <div class="mb-2 border-2 border-dashed border-black px-4 py-2 text-center">
-            <div style="@headerText">@s.InstituteName</div>
-            @if (!string.IsNullOrWhiteSpace(s.InstituteAddress))
-            {
-                <div class="font-bold uppercase" style="color:@s.FontColorHex;font-size:11pt;letter-spacing:0.02em;">@s.InstituteAddress</div>
-            }
-        </div>
+        @* ---- Title block (institute name + address). Arrangement is driven by
+             the selected Header layout so the settings-rail choice is reflected. ---- *@
+        @switch (s.HeaderLayout)
+        {
+            case 3: // Logo on both left and right, title centered
+                <div class="relative mb-2 border-2 border-dashed border-black px-4 py-2">
+                    @if (hasLogo)
+                    {
+                        <img src="@s.LogoUrl" alt="Logo" class="absolute left-4 top-1/2 -translate-y-1/2" style="@logoStyle" />
+                        <img src="@s.LogoUrl" alt="Logo" class="absolute right-4 top-1/2 -translate-y-1/2" style="@logoStyle" />
+                    }
+                    <div class="text-center">
+                        <div style="@headerText">@s.InstituteName</div>
+                        @if (!string.IsNullOrWhiteSpace(s.InstituteAddress))
+                        {
+                            <div class="font-bold uppercase" style="@addressStyle">@s.InstituteAddress</div>
+                        }
+                    </div>
+                </div>
+                break;
 
-        @* ---- Info table: left fields | centered logo | right fields ---- *@
+            case 2: // Compact single line
+                <div class="mb-2 border-b-2 border-black px-2 py-1 text-center">
+                    <div style="@headerText">@s.InstituteName</div>
+                    @if (!string.IsNullOrWhiteSpace(s.InstituteAddress))
+                    {
+                        <div class="font-bold uppercase" style="@addressStyle">@s.InstituteAddress</div>
+                    }
+                </div>
+                break;
+
+            default: // 1 = Logo & details split (logo lives in the info table)
+                <div class="mb-2 border-2 border-dashed border-black px-4 py-2 text-center">
+                    <div style="@headerText">@s.InstituteName</div>
+                    @if (!string.IsNullOrWhiteSpace(s.InstituteAddress))
+                    {
+                        <div class="font-bold uppercase" style="@addressStyle">@s.InstituteAddress</div>
+                    }
+                </div>
+                break;
+        }
+
+        @* Info table: left fields | centered logo | right fields *@
         <table class="mb-4 w-full table-fixed border-collapse text-sm" style="color:@s.FontColorHex;">
             <colgroup>
                 <col style="width:15%" />
@@ -51,7 +87,7 @@
                     <td class="border border-black px-2 py-1 font-semibold">Student Name:</td>
                     <td class="border border-black px-2 py-1"></td>
                     <td class="border border-black px-2 py-1 text-center align-middle" rowspan="3">
-                        @if (!string.IsNullOrEmpty(s.LogoUrl))
+                        @if (logoInTable && hasLogo)
                         {
                             <img src="@s.LogoUrl" alt="Logo" class="mx-auto inline-block max-w-full" style="@logoStyle" />
                         }
@@ -81,12 +117,12 @@
             </p>
         }
 
-        @* ---- Sections (replaced live by the builder) ---- *@
+        @* Sections *@
         <div id="paper-sections">
             <partial name="_PaperSectionsList" model="sectionsModel" />
         </div>
 
-        @* ---- Footer ---- *@
+        @* Footer *@
         @if (!string.IsNullOrWhiteSpace(s.FooterText))
         {
             <footer class="mt-8 border-t border-gray-400 pt-2 text-center text-xs" style="color:@s.FontColorHex;">

@@ -1,8 +1,11 @@
 @using Scholar.Common.Papers
+@using Scholar.Enums
 @using Scholar.Models.ViewModels
 @model PaperBuilderViewModel
 @{
     ViewData["Title"] = "Create Paper";
+    ViewData["HideAppSidebar"] = true;   // The paper-settings rail takes the sidebar's place.
+    ViewData["HidePageHeader"] = true;
 
     var doc = new PaperDocumentViewModel
     {
@@ -13,47 +16,233 @@
     };
 
     string ctrlCls = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 p-2.5";
+
+    // Compact controls for the settings rail.
+    string rLabel = "mb-1 block text-xs font-medium text-gray-600";
+    string rInput = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2";
+    var s = Model.Settings;
 }
 
-@* ===================== Toolbar ===================== *@
-<div class="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-white border border-gray-200 shadow-sm p-3 print:hidden">
-    <button type="button" id="open-menu"
-            class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
-        Question's Menu
-    </button>
+<div class="flex gap-4">
 
-    <div class="mx-2 h-6 w-px bg-gray-200"></div>
+    @* ===================== Settings rail (left) ===================== *@
+    <aside id="settings-rail" class="w-80 shrink-0 print:hidden">
+        <div class="sticky top-20 flex max-h-[calc(100vh-6rem)] flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
+            <header class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+                <h2 class="text-sm font-semibold text-gray-900">Paper settings</h2>
+                <button type="button" id="collapse-settings" title="Hide settings"
+                        class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
+                </button>
+            </header>
 
-    <input id="paper-title" class="@ctrlCls w-48" placeholder="Paper title" />
-    <input id="paper-type" class="@ctrlCls w-48" placeholder="Paper type" />
-    <input id="paper-time" type="number" min="0" class="@ctrlCls w-48" placeholder="Time" />
+            <div class="min-h-0 flex-1 space-y-6 overflow-y-auto p-4">
 
-    <div class="ms-auto flex items-center gap-4">
-        <span class="text-sm text-gray-600">
-            <span id="total-questions" class="font-semibold text-gray-900">0</span> Qs ·
-            <span id="total-marks" class="font-semibold text-gray-900">0</span> marks
-        </span>
-        <button type="button" id="print-now"
-                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-            Print
-        </button>
-        <button type="button" id="save-paper"
-                class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
-            Save &amp; Print
-        </button>
-        <button type="button" id="cancel-paper"
-                class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-            Cancel
-        </button>
+                @* ---- Typography ---- *@
+                <div>
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-700">Typography</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2">
+                            <label class="@rLabel">Header font</label>
+                            <select id="s-headerFont" class="@rInput">
+                                @foreach (var f in PaperSettingsCatalog.HeaderFonts)
+                                {
+                                    <option value="@f" selected="@(s.HeaderFontStyle == f)">@f</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="@rLabel">Body (English) font</label>
+                            <select id="s-englishFont" class="@rInput">
+                                @foreach (var f in PaperSettingsCatalog.EnglishFonts)
+                                {
+                                    <option value="@f" selected="@(s.EnglishTextFontStyle == f)">@f</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="@rLabel">Header size (pt)</label>
+                            <input id="s-headerFontSize" type="number" min="@PaperSettingsCatalog.MinFontSize" max="@PaperSettingsCatalog.MaxFontSize" value="@s.HeaderFontSize" class="@rInput" />
+                        </div>
+                        <div>
+                            <label class="@rLabel">Heading size (pt)</label>
+                            <input id="s-headingFontSize" type="number" min="@PaperSettingsCatalog.MinFontSize" max="@PaperSettingsCatalog.MaxFontSize" value="@s.HeadingFontSize" class="@rInput" />
+                        </div>
+                        <div>
+                            <label class="@rLabel">Text size (pt)</label>
+                            <input id="s-textFontSize" type="number" min="@PaperSettingsCatalog.MinFontSize" max="@PaperSettingsCatalog.MaxFontSize" value="@s.TextFontSize" class="@rInput" />
+                        </div>
+                        <div>
+                            <label class="@rLabel">Line height</label>
+                            <input id="s-lineHeight" type="number" step="0.1" min="@PaperSettingsCatalog.MinLineHeight" max="@PaperSettingsCatalog.MaxLineHeight" value="@s.LineHeight" class="@rInput" />
+                        </div>
+                        <div>
+                            <label class="@rLabel">Heading style</label>
+                            <select id="s-headingFormatting" class="@rInput">
+                                @foreach (var v in Enum.GetValues<TextFormatting>())
+                                {
+                                    <option value="@((int)v)" selected="@(s.HeadingFormatting == v)">@v</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="@rLabel">Text style</label>
+                            <select id="s-textFormatting" class="@rInput">
+                                @foreach (var v in Enum.GetValues<TextFormatting>())
+                                {
+                                    <option value="@((int)v)" selected="@(s.TextFormatting == v)">@v</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="@rLabel">Font color</label>
+                            <select id="s-fontColor" class="@rInput">
+                                @foreach (var c in Enum.GetValues<PaperFontColor>())
+                                {
+                                    var hex = PaperSettingsCatalog.ToHex(c);
+                                    <option value="@hex" selected="@(string.Equals(s.FontColorHex, hex, StringComparison.OrdinalIgnoreCase))">@c</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                @* ---- Header layout ---- *@
+                <div>
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-700">Header layout</h3>
+                    <select id="s-headerLayout" class="@rInput">
+                        @foreach (var layout in PaperSettingsCatalog.HeaderLayouts)
+                        {
+                            <option value="@layout.Number" selected="@(s.HeaderLayout == layout.Number)">@layout.Label</option>
+                        }
+                    </select>
+                </div>
+
+                @* ---- Watermark & branding ---- *@
+                <div>
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-700">Watermark &amp; logo</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2">
+                            <label class="@rLabel">Watermark</label>
+                            <select id="s-watermark" class="@rInput">
+                                @foreach (var v in Enum.GetValues<WatermarkType>())
+                                {
+                                    <option value="@((int)v)" selected="@(s.Watermark == v)">@v</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="@rLabel">WM opacity</label>
+                            <input id="s-wmOpacity" type="number" step="0.1" min="@PaperSettingsCatalog.MinOpacity" max="@PaperSettingsCatalog.MaxOpacity" value="@s.PicWatermarkOpacity" class="@rInput" />
+                        </div>
+                        <div></div>
+                        <div>
+                            <label class="@rLabel">WM height</label>
+                            <input id="s-wmHeight" type="number" min="@PaperSettingsCatalog.MinDimension" max="@PaperSettingsCatalog.MaxDimension" value="@s.PicWatermarkHeight" class="@rInput" />
+                        </div>
+                        <div>
+                            <label class="@rLabel">WM width</label>
+                            <input id="s-wmWidth" type="number" min="@PaperSettingsCatalog.MinDimension" max="@PaperSettingsCatalog.MaxDimension" value="@s.PicWatermarkWidth" class="@rInput" />
+                        </div>
+                        <div>
+                            <label class="@rLabel">Logo height</label>
+                            <input id="s-logoHeight" type="number" min="@PaperSettingsCatalog.MinDimension" max="@PaperSettingsCatalog.MaxDimension" value="@s.LogoHeight" class="@rInput" />
+                        </div>
+                        <div>
+                            <label class="@rLabel">Logo width</label>
+                            <input id="s-logoWidth" type="number" min="@PaperSettingsCatalog.MinDimension" max="@PaperSettingsCatalog.MaxDimension" value="@s.LogoWidth" class="@rInput" />
+                        </div>
+                    </div>
+                </div>
+
+                @* ---- Content ---- *@
+                <div>
+                    <h3 class="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-700">Content</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="@rLabel">MCQ layout</label>
+                            <select id="s-mcqsLayout" class="@rInput">
+                                @foreach (var v in Enum.GetValues<McqsLayout>())
+                                {
+                                    <option value="@((int)v)" selected="@(s.McqsLayout == v)">@v</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="@rLabel">Numeral style</label>
+                            <select id="s-numeralStyle" class="@rInput">
+                                @foreach (var v in Enum.GetValues<NumeralStyle>())
+                                {
+                                    <option value="@((int)v)" selected="@(s.NumeralStyle == v)">@v</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="@rLabel">Important note</label>
+                            <textarea id="s-note" rows="2" class="@rInput" placeholder="e.g. Write your roll number in the space provided.">@s.ImportantNote</textarea>
+                        </div>
+                        <div>
+                            <label class="@rLabel">Footer text</label>
+                            <textarea id="s-footer" rows="2" class="@rInput" placeholder="e.g. Copyrights © Your Institute">@s.FooterText</textarea>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </aside>
+
+    @* Builder (right) *@
+    <div class="min-w-0 flex-1">
+
+        @* Toolbar *@
+        <div class="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-white border border-gray-200 shadow-sm p-3 print:hidden">
+            <button type="button" id="show-settings" title="Show settings"
+                    class="hidden inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                Settings
+            </button>
+            <button type="button" id="open-menu"
+                    class="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
+                Question's Menu
+            </button>
+
+            <div class="mx-2 h-6 w-px bg-gray-200"></div>
+
+            <input id="paper-title" class="@ctrlCls w-40" placeholder="Paper title" />
+            <input id="paper-type" class="@ctrlCls w-40" placeholder="Paper type" />
+            <input id="paper-time" type="number" min="0" class="@ctrlCls w-28" placeholder="Time" />
+
+            <div class="ms-auto flex items-center gap-4">
+                <span class="text-sm text-gray-600">
+                    <span id="total-questions" class="font-semibold text-gray-900">0</span> Qs ·
+                    <span id="total-marks" class="font-semibold text-gray-900">0</span> marks
+                </span>
+                <button type="button" id="print-now"
+                        class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Print
+                </button>
+                <button type="button" id="save-paper"
+                        class="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">
+                    Save &amp; Print
+                </button>
+                <button type="button" id="cancel-paper"
+                        class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+            </div>
+        </div>
+
+        @* Paper canvas *@
+        <div class="rounded-lg bg-gray-100 p-4 sm:p-8 print:bg-white print:p-0">
+            <div id="paper-canvas">
+                <partial name="_PaperCanvas" model="doc" />
+            </div>
+        </div>
     </div>
 </div>
 
-@* ===================== Paper canvas ===================== *@
-<div class="rounded-lg bg-gray-100 p-4 sm:p-8 print:bg-white print:p-0">
-    <partial name="_PaperCanvas" model="doc" />
-</div>
-
-@* ===================== Question's Menu modal ===================== *@
+@* Question's Menu modal *@
 <div id="menu-modal" class="hidden fixed inset-0 z-50 flex items-start justify-center overflow-hidden bg-black/50 p-4 print:hidden">
     <div class="flex h-[calc(100vh-2rem)] w-full max-w-none flex-col rounded-lg bg-white shadow-xl">
         <div class="flex items-center justify-between border-b border-gray-200 p-4">
@@ -128,7 +317,7 @@
                         <label class="mb-1 block text-xs font-medium text-gray-700">Each Question Marks</label>
                         <input id="f-marks" type="number" min="1" value="1" class="@ctrlCls w-full" />
                     </div>
-                    
+
                 </div>
 
                 <div class="mt-3 flex flex-wrap items-center gap-2">
@@ -155,21 +344,66 @@
         (function () {
             var subjectId = @Model.SubjectId;
             var instituteId = @Model.InstituteId;
+            var subjectName = @Json.Serialize(Model.SubjectName);
+            var gradeName = @Json.Serialize(Model.GradeName);
             var urls = {
                 search: '@Url.Action("SearchQuestions", "Test")',
-                render: '@Url.Action("RenderSections", "Test")',
+                canvas: '@Url.Action("RenderCanvas", "Test")',
                 save: '@Url.Action("Save", "Test")'
             };
 
-            var sections = []; // { type, instruction, marksPerQuestion, questionIds: [] }
+            var sections = []; // { type, marksPerQuestion, questionIds: [] }
 
             var modal = document.getElementById('menu-modal');
             var results = document.getElementById('search-results');
-            var canvasSections = document.getElementById('paper-sections');
+            var canvasHost = document.getElementById('paper-canvas');
 
             function show(el, on) { el.classList.toggle('hidden', !on); }
             document.getElementById('open-menu').onclick = function () { show(modal, true); };
             document.querySelectorAll('.close-menu').forEach(function (b) { b.onclick = function () { show(modal, false); }; });
+
+            // ---- Settings rail collapse / restore ----
+            var rail = document.getElementById('settings-rail');
+            var showSettingsBtn = document.getElementById('show-settings');
+            document.getElementById('collapse-settings').onclick = function () {
+                rail.classList.add('hidden');
+                showSettingsBtn.classList.remove('hidden');
+            };
+            showSettingsBtn.onclick = function () {
+                rail.classList.remove('hidden');
+                showSettingsBtn.classList.add('hidden');
+            };
+
+            // ---- Read helpers for the settings rail ----
+            function val(id) { var e = document.getElementById(id); return e ? e.value : ''; }
+            function intVal(id) { return parseInt(val(id), 10) || 0; }
+            function floatVal(id) { return parseFloat(val(id)) || 0; }
+            function chk(id) { var e = document.getElementById(id); return !!(e && e.checked); }
+
+            function collectSettings() {
+                return {
+                    headerLayout: intVal('s-headerLayout'),
+                    headerFontStyle: val('s-headerFont'),
+                    headerFontSize: intVal('s-headerFontSize'),
+                    headingFontSize: intVal('s-headingFontSize'),
+                    textFontSize: intVal('s-textFontSize'),
+                    textFormatting: intVal('s-textFormatting'),
+                    headingFormatting: intVal('s-headingFormatting'),
+                    lineHeight: floatVal('s-lineHeight'),
+                    fontColorHex: val('s-fontColor'),
+                    englishTextFontStyle: val('s-englishFont'),
+                    watermark: intVal('s-watermark'),
+                    picWatermarkOpacity: floatVal('s-wmOpacity'),
+                    picWatermarkHeight: intVal('s-wmHeight'),
+                    picWatermarkWidth: intVal('s-wmWidth'),
+                    logoHeight: intVal('s-logoHeight'),
+                    logoWidth: intVal('s-logoWidth'),
+                    mcqsLayout: intVal('s-mcqsLayout'),
+                    numeralStyle: intVal('s-numeralStyle'),
+                    importantNote: val('s-note'),
+                    footerText: val('s-footer')
+                };
+            }
 
             // Select-all + chapter -> topic checkbox syncing.
             document.getElementById('select-all-chapters').addEventListener('change', function (e) {
@@ -264,17 +498,17 @@
 
                 // Add to the canvas live, then reset the menu for the next section.
                 // The modal stays open until the user clicks Close.
-                renderSections();
+                renderCanvas();
                 results.innerHTML = '';
                 document.getElementById('pick-count').textContent = 'Selected 0 Question(s)';
             };
 
             // ---- Delete section (delegated on canvas) ----
-            canvasSections.addEventListener('click', function (e) {
+            canvasHost.addEventListener('click', function (e) {
                 if (!e.target.classList.contains('section-delete')) return;
                 var idx = parseInt(e.target.getAttribute('data-section-index'), 10);
                 sections.splice(idx, 1);
-                renderSections();
+                renderCanvas();
             });
 
             function totals() {
@@ -284,16 +518,38 @@
                 document.getElementById('total-marks').textContent = m;
             }
 
-            function renderSections() {
+            // ---- Re-render the whole sheet (settings + meta + sections) ----
+            function renderCanvas() {
                 totals();
-                fetch(urls.render, {
+                fetch(urls.canvas, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ instituteId: instituteId, sections: sections })
+                    body: JSON.stringify({
+                        instituteId: instituteId,
+                        title: document.getElementById('paper-title').value,
+                        paperType: document.getElementById('paper-type').value,
+                        durationMinutes: parseInt(document.getElementById('paper-time').value, 10) || 0,
+                        subjectName: subjectName,
+                        gradeName: gradeName,
+                        settings: collectSettings(),
+                        sections: sections
+                    })
                 })
                     .then(function (r) { return r.text(); })
-                    .then(function (h) { canvasSections.innerHTML = h; });
+                    .then(function (h) { canvasHost.innerHTML = h; });
             }
+
+            // ---- Live: any settings-rail or paper-meta change redraws the sheet (debounced) ----
+            var debounceTimer;
+            function scheduleRender() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(renderCanvas, 250);
+            }
+            rail.addEventListener('input', scheduleRender);
+            rail.addEventListener('change', scheduleRender);
+            ['paper-title', 'paper-type', 'paper-time'].forEach(function (id) {
+                document.getElementById(id).addEventListener('input', scheduleRender);
+            });
 
             // ---- Save & print ----
             document.getElementById('save-paper').onclick = function () {
@@ -309,6 +565,7 @@
                         title: title,
                         paperType: document.getElementById('paper-type').value,
                         durationMinutes: parseInt(document.getElementById('paper-time').value, 10) || 0,
+                        settings: collectSettings(),
                         sections: sections
                     })
                 }).then(function (r) {
@@ -335,7 +592,7 @@
 
     <style>
         @@media print {
-            header, aside#sidebar { display: none !important; }
+            header, aside#sidebar, #settings-rail { display: none !important; }
             main { padding: 0 !important; }
             .paper-sheet { box-shadow: none !important; }
         }

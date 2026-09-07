@@ -23,6 +23,7 @@ namespace Scholar.Data
         public DbSet<TestQuestion> TestQuestions => Set<TestQuestion>();
         public DbSet<Teacher> Teacher => Set<Teacher>();
         public DbSet<Student> Students => Set<Student>();
+        public DbSet<Attendance> Attendances => Set<Attendance>();
         public DbSet<TestSettings> TestSettings => Set<TestSettings>();
         public DbSet<PastPaper> PastPapers => Set<PastPaper>();
         public DbSet<TestSection> TestSections => Set<TestSection>();
@@ -66,6 +67,25 @@ namespace Scholar.Data
                 .Property(s => s.Gender).HasConversion<string>().HasMaxLength(20);
             builder.Entity<Student>()
                 .HasIndex(s => s.InstituteId);
+
+            // Daily attendance. Deleting a student removes their attendance
+            // (cascade); the Institute FK is NoAction to avoid a second cascade
+            // path (attendance already cascades via Student -> Institute). Status
+            // is stored as a readable string. At most one row per student per day.
+            builder.Entity<Attendance>()
+                .HasOne(a => a.Student).WithMany()
+                .HasForeignKey(a => a.StudentId).OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<Attendance>()
+                .HasOne(a => a.Institute).WithMany()
+                .HasForeignKey(a => a.InstituteId).OnDelete(DeleteBehavior.NoAction);
+            builder.Entity<Attendance>()
+                .Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
+            builder.Entity<Attendance>()
+                .Property(a => a.Date).HasColumnType("date");
+            builder.Entity<Attendance>()
+                .HasIndex(a => new { a.StudentId, a.Date }).IsUnique();
+            builder.Entity<Attendance>()
+                .HasIndex(a => new { a.InstituteId, a.Date });
 
             // Curriculum tree: Boards and Grades are global lookups. A Subject ties a
             // grade to a board (both FKs live on Subject). Deleting a grade cascades to

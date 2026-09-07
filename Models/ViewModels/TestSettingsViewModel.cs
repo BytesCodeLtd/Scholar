@@ -76,11 +76,11 @@ namespace Scholar.Models.ViewModels
 
         [Display(Name = "Logo Height")]
         [Range(PaperSettingsCatalog.MinDimension, PaperSettingsCatalog.MaxDimension)]
-        public int LogoHeight { get; set; } = 100;
+        public int LogoHeight { get; set; } = 90;
 
         [Display(Name = "Logo Width")]
         [Range(PaperSettingsCatalog.MinDimension, PaperSettingsCatalog.MaxDimension)]
-        public int LogoWidth { get; set; } = 100;
+        public int LogoWidth { get; set; } = 90;
 
         // ---- Content options --------------------------------------------
 

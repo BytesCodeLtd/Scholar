@@ -1,9 +1,7 @@
 @model IEnumerable<Chapter>
 @{
     ViewData["Title"] = "Chapters";
-    ViewData["PageSubtitle"] = "Select the chapters to include in the test.";
-
-    var institutes = ViewBag.Institutes as IEnumerable<Institute>;
+    IEnumerable<Institute>? institutes = ViewBag.Institutes as IEnumerable<Institute>;
 }
 
 @if (!Model.Any())

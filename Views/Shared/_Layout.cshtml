@@ -18,7 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
 </head>
-<body class="min-h-screen flex flex-col bg-gray-50 text-gray-900">
+<body class="min-h-screen sm:h-screen sm:overflow-hidden flex flex-col bg-gray-50 text-gray-900">
     <partial name="_Toast" />
     @if (ViewData["HideNav"] as bool? != true)
     {
@@ -90,12 +90,13 @@
     </header>
     }
 
-    <div class="flex flex-1 w-full">
-        @if (SignInManager.IsSignedIn(User))
+    @{ bool hideAppSidebar = ViewData["HideAppSidebar"] as bool? == true; }
+    <div class="flex flex-1 w-full sm:min-h-0">
+        @if (SignInManager.IsSignedIn(User) && !hideAppSidebar)
         {
             <partial name="_Sidebar" />
         }
-        <main role="main" class="flex-1 min-w-0 px-4 py-6 @(SignInManager.IsSignedIn(User) ? "sm:ms-64" : "")">
+        <main role="main" class="flex flex-col flex-1 min-w-0 px-4 py-6 sm:min-h-0 sm:overflow-auto @(SignInManager.IsSignedIn(User) && !hideAppSidebar ? "sm:ms-64" : "")">
             @if (SignInManager.IsSignedIn(User) && ViewData["HidePageHeader"] as bool? != true)
             {
                 <partial name="_PageHeader" />

@@ -38,9 +38,9 @@ namespace Scholar.Models
 
         public int PicWatermarkWidth { get; set; } = 70;
 
-        public int LogoHeight { get; set; } = 100;
+        public int LogoHeight { get; set; } = 90;
 
-        public int LogoWidth { get; set; } = 100;
+        public int LogoWidth { get; set; } = 90;
 
         public McqsLayout McqsLayout { get; set; } = McqsLayout.Default;
 

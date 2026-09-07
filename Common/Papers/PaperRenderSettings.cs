@@ -27,8 +27,8 @@ namespace Scholar.Common.Papers
         public decimal PicWatermarkOpacity { get; set; } = 0.4m;
         public int PicWatermarkHeight { get; set; } = 60;
         public int PicWatermarkWidth { get; set; } = 70;
-        public int LogoHeight { get; set; } = 100;
-        public int LogoWidth { get; set; } = 100;
+        public int LogoHeight { get; set; } = 90;
+        public int LogoWidth { get; set; } = 90;
 
         // Content options
         public McqsLayout McqsLayout { get; set; } = McqsLayout.Default;

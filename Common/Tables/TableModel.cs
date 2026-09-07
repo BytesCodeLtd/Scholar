@@ -10,6 +10,33 @@ namespace Scholar.Common.Tables
         public string Property { get; set; } = string.Empty;
 
         public bool Sortable { get; set; }
+
+        public List<TableCellButton>? Buttons { get; set; }
+    }
+
+    public class TableCellButton
+    {
+        public string Text { get; set; } = string.Empty;
+
+        public string? Value { get; set; }
+
+        public string? Controller { get; set; }
+
+        public string Action { get; set; } = string.Empty;
+
+        public string Method { get; set; } = "post";
+
+        public string RouteKey { get; set; } = "id";
+
+        public IDictionary<string, string?>? RouteValues { get; set; }
+
+        public string? Confirm { get; set; }
+
+        public string? IconSvg { get; set; }
+
+        public string ActiveCss { get; set; } = string.Empty;
+
+        public string InactiveCss { get; set; } = string.Empty;
     }
 
     public class TableAction
@@ -96,6 +123,14 @@ namespace Scholar.Common.Tables
         public object? RowMenuValue(object row) =>
             RowKeyProperty is null ? null : row.GetType().GetProperty(RowKeyProperty)?.GetValue(row);
 
+        /// <summary>The row's key value (from <see cref="RowKeyProperty"/>), used to
+        /// build per-row action URLs for row menus and cell buttons alike.</summary>
+        public object? RowKey(object row) => RowMenuValue(row);
+
+        /// <summary>True when a cell button matches the cell's current value.</summary>
+        public bool IsButtonActive(TableColumn column, TableCellButton button, object row) =>
+            string.Equals(Cell(row, column)?.ToString(), button.Value, StringComparison.OrdinalIgnoreCase);
+
         public bool IsRowMenuItemVisible(RowMenuItem item, object row)
         {
             if (item.VisibleWhenProperty is null)
@@ -138,6 +173,12 @@ namespace Scholar.Common.Tables
         public TableModelBuilder<T> Column(string header, string property, bool sortable = false)
         {
             _columns.Add(new TableColumn { Header = header, Property = property, Sortable = sortable });
+            return this;
+        }
+
+        public TableModelBuilder<T> ButtonColumn(string header, string valueProperty, IEnumerable<TableCellButton> buttons)
+        {
+            _columns.Add(new TableColumn { Header = header, Property = valueProperty, Buttons = buttons.ToList() });
             return this;
         }
 

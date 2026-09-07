@@ -29,6 +29,28 @@ namespace Scholar.Models.ViewModels
 
         public DateTime CreatedAt { get; set; }
 
+        // ---- Attendance summary (all-time) + recent history ----------------
+        public int PresentCount { get; set; }
+
+        public int AbsentCount { get; set; }
+
+        public int LateCount { get; set; }
+
+        public int LeaveCount { get; set; }
+
+        /// <summary>Recent attendance marks, most recent first.</summary>
+        public List<AttendanceHistoryItem> AttendanceHistory { get; set; } = new();
+
+        /// <summary>Total days marked across all statuses.</summary>
+        public int TotalMarked => PresentCount + AbsentCount + LateCount + LeaveCount;
+
+        /// <summary>
+        /// Attendance rate as a whole percentage (Present and Late both count as
+        /// attended), or null when nothing has been marked yet.
+        /// </summary>
+        public int? AttendancePercent =>
+            TotalMarked == 0 ? null : (int)Math.Round((PresentCount + LateCount) * 100.0 / TotalMarked);
+
         /// <summary>Age in whole years from date of birth, if known.</summary>
         public int? Age
         {

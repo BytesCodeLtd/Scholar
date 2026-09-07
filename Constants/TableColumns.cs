@@ -12,5 +12,6 @@ namespace Scholar.Constants
         public const string Guardian = "Guardian";
         public const string Phone = "Phone";
         public const string Institute = "Institute";
+        public const string Status = "Status";
     }
 }

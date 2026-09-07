@@ -16,15 +16,18 @@ namespace Scholar.Controllers
         private readonly IRepository<Test> _testRepository;
         private readonly IRepository<Institute> _instituteRepository;
         private readonly IRepository<Question> _questionRepository;
+        private readonly IRepository<Student> _studentRepository;
 
         public DashboardController(
             IRepository<Test> test,
             IRepository<Institute> institute,
-            IRepository<Question> question)
+            IRepository<Question> question,
+            IRepository<Student> student)
         {
             _testRepository = test;
             _instituteRepository = institute;
             _questionRepository = question;
+            _studentRepository = student;
         }
 
         public async Task<IActionResult> Index()
@@ -57,6 +60,16 @@ namespace Scholar.Controllers
             model.TotalMcqs = questionsByType.GetValueOrDefault(QuestionType.Mcq);
             model.TotalShortQuestions = questionsByType.GetValueOrDefault(QuestionType.Short);
             model.TotalLongQuestions = questionsByType.GetValueOrDefault(QuestionType.Long);
+
+            IQueryable<Student> students = _studentRepository.Query().Where(s => s.IsActive);
+
+            if (!isSuperAdmin)
+            {
+                students = students.Where(s => s.InstituteId == instituteId);
+            }
+
+            model.TotalStudents = await students.CountAsync();
+            model.StudentsThisMonth = await students.CountAsync(s => s.CreatedAt >= monthStart && s.CreatedAt < nextMonthStart);
 
             if (isSuperAdmin)
             {

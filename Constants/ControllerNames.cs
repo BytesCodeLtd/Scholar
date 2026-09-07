@@ -10,6 +10,7 @@ namespace Scholar.Constants
         public const string Test = "Test";
         public const string Teacher = "Teacher";
         public const string Student = "Student";
+        public const string Attendance = "Attendance";
         public const string Institute = "Institute";
         public const string PastPapers = "PastPapers";
         public const string Subjects = "Subjects";

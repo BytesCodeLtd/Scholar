@@ -71,7 +71,8 @@ namespace Scholar.Controllers
         [HttpGet]
         public async Task<IActionResult> List(int subjectId)
         {
-            List<PastPaper> papers = await _pastPapers.Query().AsNoTracking()
+            List<PastPaper> papers = await _pastPapers.Query()
+                                                      .AsNoTracking()
                                                       .Where(p => p.IsActive && p.SubjectId == subjectId)
                                                       .OrderByDescending(p => p.Year)
                                                       .ThenBy(p => p.Title)

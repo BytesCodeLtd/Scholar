@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Scholar.Common.Identity;
 using Scholar.Common.Paging;
 using Scholar.Constants;
+using Scholar.Enums;
 using Scholar.Models;
 using Scholar.Models.ViewModels;
 using Scholar.Repositories;
@@ -18,15 +19,18 @@ namespace Scholar.Controllers
         private readonly IRepository<Student> _students;
         private readonly IRepository<Grade> _grades;
         private readonly IRepository<Institute> _institutes;
+        private readonly IRepository<Attendance> _attendance;
 
         public StudentController(
             IRepository<Student> students,
             IRepository<Grade> grades,
-            IRepository<Institute> institutes)
+            IRepository<Institute> institutes,
+            IRepository<Attendance> attendance)
         {
             _students = students;
             _grades = grades;
             _institutes = institutes;
+            _attendance = attendance;
         }
 
         [HttpGet]
@@ -115,6 +119,26 @@ namespace Scholar.Controllers
                 TempData["Error"] = "Student not found.";
                 return RedirectToAction(nameof(Index));
             }
+
+            // All-time status counts for the summary tiles.
+            var counts = await _attendance.Query()
+                                          .Where(a => a.StudentId == id)
+                                          .GroupBy(a => a.Status)
+                                          .Select(g => new { Status = g.Key, Count = g.Count() })
+                                          .ToListAsync();
+
+            model.PresentCount = counts.FirstOrDefault(c => c.Status == AttendanceStatus.Present)?.Count ?? 0;
+            model.AbsentCount = counts.FirstOrDefault(c => c.Status == AttendanceStatus.Absent)?.Count ?? 0;
+            model.LateCount = counts.FirstOrDefault(c => c.Status == AttendanceStatus.Late)?.Count ?? 0;
+            model.LeaveCount = counts.FirstOrDefault(c => c.Status == AttendanceStatus.Leave)?.Count ?? 0;
+
+            // Most recent marks for the history list.
+            model.AttendanceHistory = await _attendance.Query()
+                .Where(a => a.StudentId == id)
+                .OrderByDescending(a => a.Date)
+                .Take(30)
+                .Select(a => new AttendanceHistoryItem { Date = a.Date, Status = a.Status })
+                .ToListAsync();
 
             return View(model);
         }

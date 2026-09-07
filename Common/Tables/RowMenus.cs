@@ -32,7 +32,6 @@ namespace Scholar.Common.Tables
             IconSvg = Icons.Trash
         };
 
-        // Soft-delete pair for auditable records: only one shows per row based on IsActive.
         public static RowMenuItem Deactivate(string controller, string action = "Delete") => new()
         {
             Label = "Delete",
@@ -77,6 +76,14 @@ namespace Scholar.Common.Tables
             Edit(ControllerNames.Teacher),
             Delete(ControllerNames.Teacher)
         ];
+
+        public static RowMenuItem[] Attendance(string date, int gradeId, string? section, int? instituteId, int page)
+        {
+            return
+            [
+                View(ControllerNames.Student)
+            ];
+        }
 
         // Small inline icons (Flowbite-style, sized w-4 h-4) shown beside each label.
         private static class Icons

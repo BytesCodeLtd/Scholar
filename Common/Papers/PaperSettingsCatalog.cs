@@ -6,18 +6,15 @@ namespace Scholar.Common.Papers
     {
         public static readonly IReadOnlyList<(int Number, string Label)> HeaderLayouts = new List<(int, string)>
         {
-            (1, "Layout 1: Centered title"),
-            (2, "Layout 2: Logo left, title centered"),
-            (3, "Layout 3: Logo right, title centered"),
-            (4, "Layout 4: Logo & details split"),
-            (5, "Layout 5: Compact single line"),
-            (6, "Layout 6: Two-line institute banner")
+            (1, "Layout 1: Logo & details split"),
+            (2, "Layout 2: Compact single line"),
+            (3, "Layout 3: Logo left & right")
         };
 
         /// <summary>Font families offered for the header.</summary>
         public static readonly IReadOnlyList<string> HeaderFonts =
         [
-            "Default", "Arial", "Times New Roman", "Verdana", "Calibri", "Georgia"
+            "Default", "Arial", "Times New Roman", "Verdana", "Calibri", "Georgia", "Algerian"
         ];
 
         /// <summary>Font families offered for English body content.</summary>

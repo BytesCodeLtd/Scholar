@@ -18,7 +18,6 @@ namespace Scholar.Controllers
 
         public async Task<IActionResult> Index(int boardId, int gradeId)
         {
-            // A subject is scoped by both board and grade (both FKs live on Subject).
             List<Subject> subjects = await _subjectRepository.Query()
                                                              .Where(s => s.BoardId == boardId && s.GradeId == gradeId)
                                                              .OrderBy(s => s.Id)

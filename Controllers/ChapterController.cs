@@ -10,10 +10,14 @@ namespace Scholar.Controllers
     public class ChapterController : Controller
     {
         private readonly IRepository<Chapter> _chapterRepository;
+        private readonly IRepository<Institute> _institutes;
 
-        public ChapterController(IRepository<Chapter> chapterRepository)
+        public ChapterController(
+            IRepository<Chapter> chapterRepository,
+            IRepository<Institute> institutes)
         {
             _chapterRepository = chapterRepository;
+            _institutes = institutes;
         }
 
         public async Task<IActionResult> Index(int subjectId)
@@ -27,6 +31,13 @@ namespace Scholar.Controllers
 
             ViewBag.SubjectId = subjectId;
             ViewBag.GradeId = chapters.FirstOrDefault()?.Subject.GradeId ?? 0;
+
+            if (User.IsInRole(Constants.Roles.SuperAdmin))
+            {
+                ViewBag.Institutes = await _institutes.Query()
+                                                      .AsNoTracking()
+                                                      .ToListAsync();
+            }
 
             return View(chapters);
         }

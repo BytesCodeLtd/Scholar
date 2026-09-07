@@ -3,9 +3,11 @@
 @{
     ViewData["Title"] = "Saved Papers";
     var count = Model.Count();
+    bool isSuperAdmin = ViewBag.IsSuperAdmin ?? false;
+    string scope = isSuperAdmin ? "across all institutes" : "for your institute";
     ViewData["PageSubtitle"] = count == 0
-        ? "Nothing saved for your institute yet"
-        : $"{count} paper{(count == 1 ? "" : "s")} saved for your institute";
+        ? $"Nothing saved {scope} yet"
+        : $"{count} paper{(count == 1 ? "" : "s")} saved {scope}";
 }
 
 <div class="mb-6 flex justify-end">
@@ -71,6 +73,16 @@ else
                         </svg>
                         @paper.Date.ToString("dd MMM yyyy")
                     </p>
+
+                    @if (isSuperAdmin && !string.IsNullOrWhiteSpace(paper.Institute))
+                    {
+                        <p class="mt-1.5 flex items-center gap-1.5 text-sm text-gray-500">
+                            <svg class="w-4 h-4 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0H5m14 0h2m-2 0h-4m-6 0H3m2 0h4m0 0v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4m-4 0h4" />
+                            </svg>
+                            @paper.Institute
+                        </p>
+                    }
                 </div>
 
                 @* Tear line — the perforation under a paper's header block. *@

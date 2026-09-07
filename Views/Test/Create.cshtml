@@ -154,6 +154,7 @@
     <script>
         (function () {
             var subjectId = @Model.SubjectId;
+            var instituteId = @Model.InstituteId;
             var urls = {
                 search: '@Url.Action("SearchQuestions", "Test")',
                 render: '@Url.Action("RenderSections", "Test")',
@@ -179,6 +180,15 @@
                     var topics = chap.closest('div').querySelectorAll('.topic-check');
                     topics.forEach(function (t) { t.checked = chap.checked; });
                 });
+
+                // On load, tick the chapter when all its topics are already selected
+                // (indeterminate when only some are), reflecting the preselected topics.
+                var topics = chap.closest('div').querySelectorAll('.topic-check');
+                if (topics.length) {
+                    var checked = Array.prototype.filter.call(topics, function (t) { return t.checked; }).length;
+                    chap.checked = checked === topics.length;
+                    chap.indeterminate = checked > 0 && checked < topics.length;
+                }
             });
 
             // Source multi-select dropdown: toggle panel, close on outside click,
@@ -279,7 +289,7 @@
                 fetch(urls.render, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(sections)
+                    body: JSON.stringify({ instituteId: instituteId, sections: sections })
                 })
                     .then(function (r) { return r.text(); })
                     .then(function (h) { canvasSections.innerHTML = h; });
@@ -295,6 +305,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         subjectId: subjectId,
+                        instituteId: instituteId,
                         title: title,
                         paperType: document.getElementById('paper-type').value,
                         durationMinutes: parseInt(document.getElementById('paper-time').value, 10) || 0,

@@ -1,3 +1,5 @@
+using Scholar.Enums;
+
 namespace Scholar.Common.Tables
 {
     public static class TableActions
@@ -6,7 +8,7 @@ namespace Scholar.Common.Tables
         {
             Label = "Add",
             Controller = "Institute",
-            Action = "Index",
+            Action = "CreateOrUpdate",
             Style = TableActionStyle.Primary
         };
     }

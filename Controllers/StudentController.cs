@@ -36,7 +36,7 @@ namespace Scholar.Controllers
 
             (bool isSuperAdmin, int? instituteId) = GetScope();
 
-            IQueryable<Student> students = _students.Query().Where(s => s.IsActive);
+            IQueryable<Student> students = _students.Query();
 
             if (!isSuperAdmin)
             {
@@ -62,7 +62,8 @@ namespace Scholar.Controllers
                 Section = s.Section,
                 Guardian = s.GuardianName,
                 Phone = s.PhoneNumber,
-                Institute = s.Institute.Name
+                Institute = s.Institute.Name,
+                IsActive = s.IsActive
             });
 
             // Id isn't a display column, so the default/unset sort falls back to Name.
@@ -76,6 +77,46 @@ namespace Scholar.Controllers
             Scholar.Common.Paging.PagedResult<StudentRow> paged = await _students.GetPagedAsync(rows, tableParams.Page, tableParams.PageSize);
 
             return View(paged);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            (bool isSuperAdmin, int? instituteId) = GetScope();
+
+            IQueryable<Student> students = _students.Query();
+
+            if (!isSuperAdmin)
+            {
+                students = students.Where(s => s.InstituteId == instituteId);
+            }
+
+            StudentDetailsViewModel? model = await students
+                .Where(s => s.Id == id)
+                .Select(s => new StudentDetailsViewModel
+                {
+                    Id = s.Id,
+                    FullName = s.FullName,
+                    RollNumber = s.RollNumber,
+                    Class = s.Grade.Name,
+                    Section = s.Section,
+                    Gender = s.Gender,
+                    DateOfBirth = s.DateOfBirth,
+                    GuardianName = s.GuardianName,
+                    PhoneNumber = s.PhoneNumber,
+                    Institute = s.Institute.Name,
+                    IsActive = s.IsActive,
+                    CreatedAt = s.CreatedAt
+                })
+                .FirstOrDefaultAsync();
+
+            if (model is null)
+            {
+                TempData["Error"] = "Student not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View(model);
         }
 
         [HttpGet]
@@ -134,6 +175,59 @@ namespace Scholar.Controllers
             await _students.SaveChangesAsync();
 
             TempData["Success"] = MsgKey.Success.Created(Key.Student);
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            (bool isSuperAdmin, int? instituteId) = GetScope();
+
+            if (!isSuperAdmin)
+            {
+                bool ownsStudent = await _students.Query()
+                    .AnyAsync(s => s.Id == id && s.InstituteId == instituteId);
+
+                if (!ownsStudent)
+                {
+                    return Forbid();
+                }
+            }
+
+            bool deactivated = await _students.SoftDeleteAsync(id);
+
+            TempData[deactivated ? "Success" : "Error"] = deactivated
+                ? "Student deactivated."
+                : "Student not found.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activate(int id)
+        {
+            (bool isSuperAdmin, int? instituteId) = GetScope();
+
+            // Institute admins may only activate their own institute's students.
+            if (!isSuperAdmin)
+            {
+                bool ownsStudent = await _students.Query()
+                    .AnyAsync(s => s.Id == id && s.InstituteId == instituteId);
+
+                if (!ownsStudent)
+                {
+                    return Forbid();
+                }
+            }
+
+            bool activated = await _students.ActivateAsync(id);
+
+            TempData[activated ? "Success" : "Error"] = activated
+                ? "Student activated."
+                : "Student not found.";
 
             return RedirectToAction(nameof(Index));
         }

@@ -13,6 +13,7 @@ namespace Scholar.Constants
         // User creation validation
         public const string FullNameRequired = "Full name is required.";
         public const string InstituteRequired = "Institute name is required.";
+        public const string InstituteExists = "An institute with this name already exists.";
         public const string RoleRequired = "Please select a role.";
 
         // Student validation

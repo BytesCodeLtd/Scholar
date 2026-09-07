@@ -43,9 +43,42 @@ namespace Scholar.Controllers
 
         [HttpGet]
         [Authorize(Roles = Roles.SuperAdmin)]
-        public IActionResult Index()
+        public async Task<IActionResult> CreateOrUpdate(int? id)
         {
-            return View(new CreateUserViewModel());
+            if (id is null)
+            {
+                return View(new CreateUserViewModel());
+            }
+
+            Institute? institute = await _institutes.Query()
+                                                    .AsNoTracking()
+                                                    .Include(i => i.Users)
+                                                    .FirstOrDefaultAsync(i => i.Id == id.Value);
+
+            if (institute is null)
+            {
+                TempData["Error"] = "Institute not found.";
+                return RedirectToAction(nameof(List));
+            }
+
+            CreateUserViewModel model = new()
+            {
+                InstituteId = institute.Id,
+                InstituteName = institute.Name,
+                InstituteAddress = institute.Address,
+                LogoUrl = institute.LogoUrl
+            };
+
+            ApplicationUser? admin = institute.Users.FirstOrDefault();
+
+            if (admin is not null)
+            {
+                model.FullName = admin.FullName ?? string.Empty;
+                model.Email = admin.Email ?? string.Empty;
+                model.Role = (await _userManager.GetRolesAsync(admin)).FirstOrDefault() ?? string.Empty;
+            }
+
+            return View(model);
         }
 
         [HttpGet]
@@ -64,11 +97,18 @@ namespace Scholar.Controllers
         [HttpPost]
         [Authorize(Roles = Roles.SuperAdmin)]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Index(CreateUserViewModel model)
+        public async Task<IActionResult> CreateOrUpdate(CreateUserViewModel model)
         {
+            bool isUpdate = model.InstituteId is not null;
+
             if (!Roles.All.Contains(model.Role))
             {
                 ModelState.AddModelError(nameof(model.Role), MsgKey.Validation.Invalid(Key.Role));
+            }
+
+            if (!isUpdate && string.IsNullOrWhiteSpace(model.Password))
+            {
+                ModelState.AddModelError(nameof(model.Password), Message.PasswordRequired);
             }
 
             ValidateLogo(model.Logo);
@@ -78,27 +118,33 @@ namespace Scholar.Controllers
                 return View(model);
             }
 
+            return isUpdate ? await UpdateAsync(model) : await CreateAsync(model);
+        }
+
+        private async Task<IActionResult> CreateAsync(CreateUserViewModel model)
+        {
             string instituteName = model.InstituteName.Trim();
 
-            Institute? institute = await _institutes.Query().FirstOrDefaultAsync(i => i.Name == instituteName);
+            bool IsExist = await _institutes.Query().AnyAsync(i => i.Name == instituteName);
 
-            bool isNewInstitute = institute is null;
-            institute ??= new Institute { Name = instituteName };
+            if (IsExist)
+            {
+                ModelState.AddModelError(nameof(model.InstituteName), Message.InstituteExists);
+                return View(nameof(CreateOrUpdate), model);
+            }
+
+            Institute institute = new()
+            {
+                Name = instituteName,
+                Address = string.IsNullOrWhiteSpace(model.InstituteAddress) ? null : model.InstituteAddress.Trim()
+            };
 
             if (model.Logo is { Length: > 0 })
             {
                 institute.LogoUrl = await _fileStorage.UploadAsync(model.Logo, "logos");
             }
 
-            if (isNewInstitute)
-            {
-                await _institutes.AddAsync(institute);
-            }
-            else
-            {
-                _institutes.Update(institute);
-            }
-
+            await _institutes.AddAsync(institute);
             await _institutes.SaveChangesAsync();
 
             ApplicationUser user = new()
@@ -110,23 +156,137 @@ namespace Scholar.Controllers
                 InstituteId = institute.Id
             };
 
-            IdentityResult result = await _userManager.CreateAsync(user, model.Password);
+            IdentityResult result = await _userManager.CreateAsync(user, model.Password!);
 
             if (!result.Succeeded)
             {
-                foreach (IdentityError error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-
-                return View(model);
+                AddIdentityErrors(result);
+                return View(nameof(CreateOrUpdate), model);
             }
 
             await _userManager.AddToRoleAsync(user, model.Role);
 
             TempData["Success"] = $"User \"{model.Email}\" created as {model.Role}.";
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(List));
+        }
+
+        private async Task<IActionResult> UpdateAsync(CreateUserViewModel model)
+        {
+            Institute? institute = await _institutes.Query()
+                                                    .Include(i => i.Users)
+                                                    .FirstOrDefaultAsync(i => i.Id == model.InstituteId);
+
+            if (institute is null)
+            {
+                TempData["Error"] = "Institute not found.";
+                return RedirectToAction(nameof(List));
+            }
+
+            string instituteName = model.InstituteName.Trim();
+
+            bool nameTaken = await _institutes.Query()
+                                              .AnyAsync(i => i.Name == instituteName && i.Id != institute.Id);
+            if (nameTaken)
+            {
+                ModelState.AddModelError(nameof(model.InstituteName), Message.InstituteExists);
+                return View(nameof(CreateOrUpdate), model);
+            }
+
+            institute.Name = instituteName;
+            institute.Address = string.IsNullOrWhiteSpace(model.InstituteAddress) ? null : model.InstituteAddress.Trim();
+
+            if (model.Logo is { Length: > 0 })
+            {
+                institute.LogoUrl = await _fileStorage.UploadAsync(model.Logo, "logos");
+            }
+
+            _institutes.Update(institute);
+            await _institutes.SaveChangesAsync();
+
+            ApplicationUser? admin = institute.Users.FirstOrDefault();
+
+            if (admin is not null)
+            {
+                admin.FullName = model.FullName;
+                admin.Email = model.Email;
+                admin.UserName = model.Email;
+
+                IdentityResult update = await _userManager.UpdateAsync(admin);
+
+                if (!update.Succeeded)
+                {
+                    AddIdentityErrors(update);
+                    return View(nameof(CreateOrUpdate), model);
+                }
+
+                IList<string> currentRoles = await _userManager.GetRolesAsync(admin);
+                if (!currentRoles.Contains(model.Role))
+                {
+                    await _userManager.RemoveFromRolesAsync(admin, currentRoles);
+                    await _userManager.AddToRoleAsync(admin, model.Role);
+                }
+
+                // Only touch the password if a new one was entered.
+                if (!string.IsNullOrWhiteSpace(model.Password))
+                {
+                    string token = await _userManager.GeneratePasswordResetTokenAsync(admin);
+                    IdentityResult reset = await _userManager.ResetPasswordAsync(admin, token, model.Password);
+                    if (!reset.Succeeded)
+                    {
+                        AddIdentityErrors(reset);
+                        return View(nameof(CreateOrUpdate), model);
+                    }
+                }
+            }
+
+            TempData["Success"] = $"Institute \"{institute.Name}\" updated.";
+
+            return RedirectToAction(nameof(List));
+        }
+
+        private void AddIdentityErrors(IdentityResult result)
+        {
+            foreach (IdentityError error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+        }
+
+        [HttpPost]
+        [Authorize(Roles = Roles.SuperAdmin)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            bool deleted = await _institutes.SoftDeleteAsync(id);
+
+            if (!deleted)
+            {
+                TempData["Error"] = "Institute not found.";
+                return RedirectToAction(nameof(List));
+            }
+
+            TempData["Success"] = "Institute deactivated.";
+
+            return RedirectToAction(nameof(List));
+        }
+
+        [HttpPost]
+        [Authorize(Roles = Roles.SuperAdmin)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Activate(int id)
+        {
+            bool activated = await _institutes.ActivateAsync(id);
+
+            if (!activated)
+            {
+                TempData["Error"] = "Institute not found.";
+                return RedirectToAction(nameof(List));
+            }
+
+            TempData["Success"] = "Institute activated.";
+
+            return RedirectToAction(nameof(List));
         }
 
         /// <summary>

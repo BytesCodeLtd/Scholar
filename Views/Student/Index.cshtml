@@ -7,7 +7,7 @@
         .Title("Students")
         .WithSearch()
         .WithCheckbox(show: true, valueProperty: nameof(StudentRow.Id))
-        .WithRowMenu()
+        .WithRowMenu(nameof(StudentRow.Id), RowMenus.Student())
         .WithAction("Add student", "Create", ControllerNames.Student, TableActionStyle.Primary)
         .Column(TableColumns.Name, nameof(StudentRow.Name), sortable: true)
         .Column(TableColumns.RollNumber, nameof(StudentRow.RollNumber), sortable: true)
@@ -21,7 +21,8 @@
     }
 
     builder.Column(TableColumns.Guardian, nameof(StudentRow.Guardian))
-           .Column(TableColumns.Phone, nameof(StudentRow.Phone));
+           .Column(TableColumns.Phone, nameof(StudentRow.Phone))
+           .Column("Status", nameof(StudentRow.IsActive), sortable: true);
 
     TableModel table = builder.Build();
 }

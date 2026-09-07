@@ -5,6 +5,8 @@ namespace Scholar.Models.ViewModels
 {
     public class CreateUserViewModel
     {
+        public int? InstituteId { get; set; }
+
         [Required(ErrorMessage = Message.FullNameRequired)]
         [Display(Name = "Full Name")]
         public string FullName { get; set; } = string.Empty;
@@ -18,13 +20,20 @@ namespace Scholar.Models.ViewModels
         [Display(Name = "Institute Name")]
         public string InstituteName { get; set; } = string.Empty;
 
+        [Display(Name = "Institute Address")]
+        public string? InstituteAddress { get; set; }
+
         [Display(Name = "Institute Logo")]
         public IFormFile? Logo { get; set; }
 
-        [Required(ErrorMessage = Message.PasswordRequired)]
+        // Existing logo shown when editing; a new upload replaces it.
+        public string? LogoUrl { get; set; }
+
+        // Required only when creating (enforced in the controller); on update, a blank
+        // value means "keep the current password".
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
-        public string Password { get; set; } = string.Empty;
+        public string? Password { get; set; }
 
         [Required(ErrorMessage = Message.RoleRequired)]
         [Display(Name = "Role")]

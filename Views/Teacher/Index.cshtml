@@ -7,7 +7,7 @@
                                  .Title("Teachers")
                                  .WithSearch()
                                  .WithCheckbox(show: true, valueProperty: nameof(TeacherRow.Id))
-                                 .WithRowMenu()
+                                 .WithRowMenu(nameof(TeacherRow.Id), RowMenus.Teacher())
                                  .Column(TableColumns.Name, nameof(TeacherRow.Name), sortable: true)
                                  .Column(TableColumns.Email, nameof(TeacherRow.Email), sortable: true)
                                  .Column(TableColumns.Subjects, nameof(TeacherRow.Subjects))

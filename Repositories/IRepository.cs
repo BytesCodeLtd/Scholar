@@ -21,6 +21,10 @@ namespace Scholar.Repositories
 
         void Remove(T entity);
 
+        Task<bool> SoftDeleteAsync(int id);
+
+        Task<bool> ActivateAsync(int id);
+
         Task<int> SaveChangesAsync();
     }
 }

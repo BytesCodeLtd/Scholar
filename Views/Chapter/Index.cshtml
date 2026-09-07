@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = "Chapters";
     ViewData["PageSubtitle"] = "Select the chapters to include in the test.";
+
+    var institutes = ViewBag.Institutes as IEnumerable<Institute>;
 }
 
 @if (!Model.Any())
@@ -14,6 +16,21 @@ else
 {
     <form id="chapter-form" method="post" asp-controller="Test" asp-action="Create">
         <input type="hidden" name="subjectId" value="@ViewBag.SubjectId" />
+
+        @if (institutes is not null)
+        {
+            <div class="mb-4 max-w-sm">
+                <label for="instituteId" class="mb-1 block text-sm font-medium text-gray-900">Institute</label>
+                <select id="instituteId" name="instituteId" required
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5">
+                    <option value="" disabled selected>Select an institute…</option>
+                    @foreach (var inst in institutes)
+                    {
+                        <option value="@inst.Id">@inst.Name</option>
+                    }
+                </select>
+            </div>
+        }
 
         <label class="mb-3 inline-flex items-center gap-3 text-sm font-medium text-gray-900 cursor-pointer">
             <input type="checkbox" id="select-all"

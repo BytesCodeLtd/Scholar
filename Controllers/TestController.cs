@@ -174,7 +174,7 @@ namespace Scholar.Controllers
                 return Forbid();
             }
 
-            if (string.IsNullOrWhiteSpace(request.Title))
+            if (request is null || string.IsNullOrWhiteSpace(request.Title))
             {
                 return BadRequest(new { message = "Give the paper a title before saving." });
             }

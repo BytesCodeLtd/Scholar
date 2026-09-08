@@ -24,8 +24,14 @@ namespace Scholar.Models.ViewModels
 
         public int InstitutesThisMonth { get; set; }
 
+        public List<string> InstituteChartLabels { get; set; } = [];
+
+        public List<int> InstituteChartData { get; set; } = [];
+
         public int TotalStudents { get; set; }
 
         public int StudentsThisMonth { get; set; }
+
+        public int TotalTeachers { get; set; }
     }
 }

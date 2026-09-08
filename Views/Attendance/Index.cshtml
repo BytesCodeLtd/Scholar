@@ -17,7 +17,7 @@
 
         RowMenuItem[] rowMenu = RowMenus.Attendance(date, gradeId, Model.Section, instituteId, page);
 
-        table = TableModel.For(Model.Roster)
+        var builder = TableModel.For(Model.Roster)
             .Title($"Attendance · {Model.Date:dddd, d MMM yyyy}")
             .WithCheckbox(show: true, valueProperty: nameof(AttendanceRosterRow.StudentId))
             .WithRowMenu(nameof(AttendanceRosterRow.StudentId), rowMenu)
@@ -25,8 +25,15 @@
             .Column(TableColumns.Name, nameof(AttendanceRosterRow.Name), sortable: true)
             .Column(TableColumns.Section, nameof(AttendanceRosterRow.Section))
             .ButtonColumn(TableColumns.Status, nameof(AttendanceRosterRow.Status),
-                CellButtons.Attendance(date, gradeId, Model.Section, instituteId, page))
-            .Build();
+                CellButtons.Attendance(date, gradeId, Model.Section, instituteId, page));
+
+        // "Mark whole class" buttons rendered as DataTable header actions.
+        foreach (var action in TableActions.Attendance(date, gradeId, Model.Section, instituteId, page))
+        {
+            builder.WithAction(action);
+        }
+
+        table = builder.Build();
     }
 }
 

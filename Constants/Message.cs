@@ -28,5 +28,9 @@ namespace Scholar.Constants
         public const string PastPaperFileRequired = "Choose a PDF file to upload.";
         public const string PastPaperInvalidType = "Past paper must be a PDF file.";
         public const string PastPaperTooLarge = "File is too large. Maximum size is 10 MB.";
+
+        // Attendance
+        public const string AccountNotLinkedToInstitute = "Your account is not linked to an institute.";
+        public const string SelectClassToMark = "Pick a class before marking the whole roster.";
     }
 }

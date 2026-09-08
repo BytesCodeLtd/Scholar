@@ -8,7 +8,7 @@
                                                       .WithSearch()
                                                       .WithCheckbox(show: true, valueProperty: nameof(StudentRow.Id))
                                                       .WithRowMenu(nameof(StudentRow.Id), RowMenus.Student())
-                                                      .WithAction("Add student", "Create", ControllerNames.Student, TableActionStyle.Primary)
+                                                      .WithAction(TableActions.AddStudent())
                                                       .Column(TableColumns.Name, nameof(StudentRow.Name), sortable: true)
                                                       .Column(TableColumns.RollNumber, nameof(StudentRow.RollNumber), sortable: true)
                                                       .Column(TableColumns.Class, nameof(StudentRow.Class))

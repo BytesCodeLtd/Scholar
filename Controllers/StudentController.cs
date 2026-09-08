@@ -150,7 +150,7 @@ namespace Scholar.Controllers
 
             if (!isSuperAdmin && instituteId is null)
             {
-                TempData["Error"] = "Your account is not linked to an institute.";
+                TempData["Error"] = Message.AccountNotLinkedToInstitute;
                 return RedirectToAction(nameof(Index));
             }
 

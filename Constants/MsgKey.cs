@@ -1,7 +1,15 @@
+using Scholar.Enums;
+
 namespace Scholar.Constants
 {
     public static class MsgKey
     {
+        public static class Attendance
+        {
+            public static string Marked(AttendanceStatus status, DateTime day) => $"Marked {status} on {day:d MMM yyyy}.";
+            public static string MarkedAll(int count, AttendanceStatus status, DateTime day) => $"Marked {count} student(s) {status} on {day:d MMM yyyy}.";
+        }
+
         public static class Validation
         {
             public static string Required(string entity) => $"{entity} is required.";

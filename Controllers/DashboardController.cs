@@ -17,17 +17,20 @@ namespace Scholar.Controllers
         private readonly IRepository<Institute> _instituteRepository;
         private readonly IRepository<Question> _questionRepository;
         private readonly IRepository<Student> _studentRepository;
+        private readonly IRepository<Teacher> _teacherRepository;
 
         public DashboardController(
             IRepository<Test> test,
             IRepository<Institute> institute,
             IRepository<Question> question,
-            IRepository<Student> student)
+            IRepository<Student> student,
+            IRepository<Teacher> teacher)
         {
             _testRepository = test;
             _instituteRepository = institute;
             _questionRepository = question;
             _studentRepository = student;
+            _teacherRepository = teacher;
         }
 
         public async Task<IActionResult> Index()
@@ -71,6 +74,15 @@ namespace Scholar.Controllers
             model.TotalStudents = await students.CountAsync();
             model.StudentsThisMonth = await students.CountAsync(s => s.CreatedAt >= monthStart && s.CreatedAt < nextMonthStart);
 
+            IQueryable<Teacher> teachers = _teacherRepository.Query().Where(t => t.IsActive);
+
+            if (!isSuperAdmin)
+            {
+                teachers = teachers.Where(t => t.User.InstituteId == instituteId);
+            }
+
+            model.TotalTeachers = await teachers.CountAsync();
+
             if (isSuperAdmin)
             {
                 model.IsSuperAdmin = true;
@@ -78,6 +90,27 @@ namespace Scholar.Controllers
                 model.ActiveInstitutes = await _instituteRepository.Query().CountAsync(i => i.IsActive);
                 model.InstitutesThisMonth = await _instituteRepository.Query()
                                                                       .CountAsync(i => i.CreatedAt >= monthStart && i.CreatedAt < nextMonthStart);
+
+                // Cumulative institute growth over the last 6 months for the area chart.
+                const int months = 6;
+                DateTime firstMonth = monthStart.AddMonths(-(months - 1));
+
+                int baseline = await _instituteRepository.Query().CountAsync(i => i.CreatedAt < firstMonth);
+
+                var monthlyNew = await _instituteRepository.Query()
+                                                           .Where(i => i.CreatedAt >= firstMonth && i.CreatedAt < nextMonthStart)
+                                                           .GroupBy(i => new { i.CreatedAt.Year, i.CreatedAt.Month })
+                                                           .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+                                                           .ToListAsync();
+
+                int running = baseline;
+                for (int i = 0; i < months; i++)
+                {
+                    DateTime m = firstMonth.AddMonths(i);
+                    running += monthlyNew.FirstOrDefault(x => x.Year == m.Year && x.Month == m.Month)?.Count ?? 0;
+                    model.InstituteChartLabels.Add(m.ToString("MMM"));
+                    model.InstituteChartData.Add(running);
+                }
             }
 
             return View(model);

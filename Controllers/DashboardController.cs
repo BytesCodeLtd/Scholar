@@ -18,19 +18,22 @@ namespace Scholar.Controllers
         private readonly IRepository<Question> _questionRepository;
         private readonly IRepository<Student> _studentRepository;
         private readonly IRepository<Teacher> _teacherRepository;
+        private readonly IRepository<PastPaper> _pastPaperRepository;
 
         public DashboardController(
             IRepository<Test> test,
             IRepository<Institute> institute,
             IRepository<Question> question,
             IRepository<Student> student,
-            IRepository<Teacher> teacher)
+            IRepository<Teacher> teacher,
+            IRepository<PastPaper> pastPaper)
         {
             _testRepository = test;
             _instituteRepository = institute;
             _questionRepository = question;
             _studentRepository = student;
             _teacherRepository = teacher;
+            _pastPaperRepository = pastPaper;
         }
 
         public async Task<IActionResult> Index()
@@ -53,6 +56,23 @@ namespace Scholar.Controllers
             model.TotalTests = await tests.CountAsync();
             model.SavedTests = await tests.CountAsync(t => t.IsActive);
             model.TestsThisMonth = await tests.CountAsync(t => t.CreatedAt >= monthStart && t.CreatedAt < nextMonthStart);
+
+            // Tests generated per month over the last 6 months for the bar chart.
+            const int testMonths = 6;
+            DateTime testFirstMonth = monthStart.AddMonths(-(testMonths - 1));
+
+            var testsMonthly = await tests
+                .Where(t => t.CreatedAt >= testFirstMonth && t.CreatedAt < nextMonthStart)
+                .GroupBy(t => new { t.CreatedAt.Year, t.CreatedAt.Month })
+                .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+                .ToListAsync();
+
+            for (int i = 0; i < testMonths; i++)
+            {
+                DateTime m = testFirstMonth.AddMonths(i);
+                model.TestChartLabels.Add(m.ToString("MMM"));
+                model.TestChartData.Add(testsMonthly.FirstOrDefault(x => x.Year == m.Year && x.Month == m.Month)?.Count ?? 0);
+            }
 
             Dictionary<QuestionType, int> questionsByType = await _questionRepository.Query()
                                                                                      .Where(q => q.IsActive)
@@ -86,6 +106,7 @@ namespace Scholar.Controllers
             if (isSuperAdmin)
             {
                 model.IsSuperAdmin = true;
+                model.TotalPastPapers = await _pastPaperRepository.Query().CountAsync(p => p.IsActive);
                 model.TotalInstitutes = await _instituteRepository.Query().CountAsync();
                 model.ActiveInstitutes = await _instituteRepository.Query().CountAsync(i => i.IsActive);
                 model.InstitutesThisMonth = await _instituteRepository.Query()

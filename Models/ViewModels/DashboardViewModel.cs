@@ -24,6 +24,8 @@ namespace Scholar.Models.ViewModels
 
         public int InstitutesThisMonth { get; set; }
 
+        public int TotalPastPapers { get; set; }
+
         public List<string> InstituteChartLabels { get; set; } = [];
 
         public List<int> InstituteChartData { get; set; } = [];
@@ -33,5 +35,11 @@ namespace Scholar.Models.ViewModels
         public int StudentsThisMonth { get; set; }
 
         public int TotalTeachers { get; set; }
+
+        /// <summary>Month labels (e.g. "Apr") for the tests-generated bar chart.</summary>
+        public List<string> TestChartLabels { get; set; } = [];
+
+        /// <summary>Tests generated per month, aligned with <see cref="TestChartLabels"/>.</summary>
+        public List<int> TestChartData { get; set; } = [];
     }
 }

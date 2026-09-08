@@ -124,7 +124,7 @@ namespace Scholar.Controllers
 
             if (targetInstituteId is null)
             {
-                TempData["Error"] = "Your account is not linked to an institute.";
+                TempData["Error"] = Message.AccountNotLinkedToInstitute;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -160,7 +160,77 @@ namespace Scholar.Controllers
 
             await _attendance.SaveChangesAsync();
 
-            TempData["Success"] = $"Marked {status} on {day:d MMM yyyy}.";
+            TempData["Success"] = MsgKey.Attendance.Marked(status, day);
+
+            return RedirectToAction(nameof(Index), new
+            {
+                date = day.ToString("yyyy-MM-dd"),
+                instituteId = scope.IsSuperAdmin ? targetInstituteId : null,
+                gradeId,
+                section,
+                page
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkAll(AttendanceStatus status, DateTime date, int? gradeId, string? section, int? instituteId, int page = 1)
+        {
+            UserScope scope = GetScope();
+
+            int? targetInstituteId = scope.IsSuperAdmin ? instituteId : scope.InstituteId;
+
+            if (targetInstituteId is null)
+            {
+                TempData["Error"] = Message.AccountNotLinkedToInstitute;
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (gradeId is null)
+            {
+                TempData["Error"] = Message.SelectClassToMark;
+                return RedirectToAction(nameof(Index));
+            }
+
+            DateTime day = date.Date;
+            string? sec = string.IsNullOrWhiteSpace(section) ? null : section.Trim();
+
+            IQueryable<Student> studentsQuery = _students.Query()
+                                                         .Where(s => s.IsActive && s.InstituteId == targetInstituteId && s.GradeId == gradeId);
+
+            if (sec is not null)
+            {
+                studentsQuery = studentsQuery.Where(s => s.Section == sec);
+            }
+
+            List<int> studentIds = await studentsQuery.Select(s => s.Id).ToListAsync();
+
+            // The day's existing marks for these students, so we can update in place.
+            Dictionary<int, Attendance> existing = await _attendance.Query()
+                                                                    .Where(a => a.Date == day && studentIds.Contains(a.StudentId))
+                                                                    .ToDictionaryAsync(a => a.StudentId);
+
+            foreach (int studentId in studentIds)
+            {
+                if (existing.TryGetValue(studentId, out Attendance? row))
+                {
+                    row.Status = status;
+                }
+                else
+                {
+                    await _attendance.AddAsync(new Attendance
+                    {
+                        InstituteId = targetInstituteId.Value,
+                        StudentId = studentId,
+                        Date = day,
+                        Status = status
+                    });
+                }
+            }
+
+            await _attendance.SaveChangesAsync();
+
+            TempData["Success"] = MsgKey.Attendance.MarkedAll(studentIds.Count, status, day);
 
             return RedirectToAction(nameof(Index), new
             {

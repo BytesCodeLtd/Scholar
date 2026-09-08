@@ -55,6 +55,8 @@ namespace Scholar.Common.Tables
 
         public TableActionStyle Style { get; set; } = TableActionStyle.Primary;
 
+        public string? Css { get; set; }
+
         public string? IconSvg { get; set; }
 
         public string? Confirm { get; set; }
@@ -223,7 +225,8 @@ namespace Scholar.Common.Tables
             string method = "get",
             IDictionary<string, string?>? routeValues = null,
             string? iconSvg = null,
-            string? confirm = null)
+            string? confirm = null,
+            string? css = null)
         {
             _actions.Add(new TableAction
             {
@@ -234,7 +237,8 @@ namespace Scholar.Common.Tables
                 Method = method,
                 RouteValues = routeValues,
                 IconSvg = iconSvg,
-                Confirm = confirm
+                Confirm = confirm,
+                Css = css
             });
             return this;
         }

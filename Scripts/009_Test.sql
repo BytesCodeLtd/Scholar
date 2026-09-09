@@ -23,7 +23,7 @@ BEGIN
             REFERENCES dbo.Subjects (Id) ON DELETE NO ACTION
     );
 
-    CREATE INDEX IX_Test_InstituteId ON dbo.Test (InstituteId);
-    CREATE INDEX IX_Test_SubjectId   ON dbo.Test (SubjectId);
+    CREATE INDEX IX_Test_InstituteId_IsActive ON dbo.Test (InstituteId, IsActive);
+    CREATE INDEX IX_Test_SubjectId            ON dbo.Test (SubjectId);
 END
 GO

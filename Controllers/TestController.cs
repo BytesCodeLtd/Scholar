@@ -343,7 +343,17 @@ namespace Scholar.Controllers
                 return null;
             }
 
-            Institute? institute = await _institutes.GetByIdAsync(instituteId.Value);
+            Institute? institute = await _institutes.Query()
+                                                    .AsNoTracking()
+                                                    .Where(i => i.Id == instituteId.Value)
+                                                    .Select(i => new Institute
+                                                    {
+                                                        Id = i.Id,
+                                                        Name = i.Name,
+                                                        Address = i.Address,
+                                                        LogoUrl = i.LogoUrl
+                                                    })
+                                                    .FirstOrDefaultAsync();
 
             if (institute is null)
             {

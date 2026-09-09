@@ -10,6 +10,8 @@ namespace Scholar.Models
 
         public Institute? Institute { get; set; }
 
+        public string? DashboardLayout { get; set; }
+
         public ICollection<Question> Questions { get; set; } = new List<Question>();
     }
 }

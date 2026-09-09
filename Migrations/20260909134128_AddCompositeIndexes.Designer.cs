@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Scholar.Data;
 
@@ -11,9 +12,11 @@ using Scholar.Data;
 namespace Scholar.Migrations
 {
     [DbContext(typeof(ScholarDbContext))]
-    partial class ScholarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260909134128_AddCompositeIndexes")]
+    partial class AddCompositeIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -169,9 +172,6 @@ namespace Scholar.Migrations
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DashboardLayout")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
@@ -404,9 +404,6 @@ namespace Scholar.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("SYSUTCDATETIME()");
-
-                    b.Property<string>("DashboardLayout")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()

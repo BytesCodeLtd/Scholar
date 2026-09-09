@@ -5,9 +5,10 @@ BEGIN
     CREATE TABLE dbo.Institutes
     (
         Id        INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Institutes PRIMARY KEY,
-        [Name]    NVARCHAR(MAX)     NOT NULL,
-        [Address] NVARCHAR(MAX)     NULL,
-        LogoUrl   NVARCHAR(MAX)     NULL,
+        [Name]          NVARCHAR(MAX) NOT NULL,
+        [Address]       NVARCHAR(MAX) NULL,
+        LogoUrl         NVARCHAR(MAX) NULL,
+        DashboardLayout NVARCHAR(MAX) NULL,
         CreatedAt DATETIME2         NOT NULL CONSTRAINT DF_Institutes_CreatedAt DEFAULT (SYSUTCDATETIME()),
         UpdatedAt DATETIME2         NOT NULL CONSTRAINT DF_Institutes_UpdatedAt DEFAULT (SYSUTCDATETIME()),
         IsActive  BIT               NOT NULL CONSTRAINT DF_Institutes_IsActive  DEFAULT (1)

@@ -131,7 +131,10 @@ namespace Scholar.Repositories.Impl
                 audit.UpdatedAt = DateTime.UtcNow;
             }
 
-            dbSet.Update(entity);
+            if (Context.Entry(entity).State == EntityState.Detached)
+            {
+                dbSet.Update(entity);
+            }
         }
 
         public void Remove(T entity) => dbSet.Remove(entity);

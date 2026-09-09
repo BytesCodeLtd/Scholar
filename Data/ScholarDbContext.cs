@@ -120,6 +120,8 @@ namespace Scholar.Data
                 .HasOne(q => q.Owner).WithMany(u => u.Questions)
                 .HasForeignKey(q => q.OwnerId).OnDelete(DeleteBehavior.SetNull);
 
+            builder.Entity<Question>().HasIndex(q => new { q.TopicId, q.Type });
+
             // One test-settings row per institute; removing an institute
             // removes its settings.
             builder.Entity<TestSettings>()
@@ -146,6 +148,8 @@ namespace Scholar.Data
             builder.Entity<Test>()
                 .HasOne(t => t.Subject).WithMany()
                 .HasForeignKey(t => t.SubjectId).OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Test>().HasIndex(t => new { t.InstituteId, t.IsActive });
 
             builder.Entity<TestQuestion>()
                 .HasOne(tq => tq.Test).WithMany(t => t.Questions)

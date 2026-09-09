@@ -21,7 +21,7 @@ BEGIN
             REFERENCES dbo.AspNetUsers (Id) ON DELETE SET NULL
     );
 
-    CREATE INDEX IX_Questions_TopicId ON dbo.Questions (TopicId);
-    CREATE INDEX IX_Questions_OwnerId ON dbo.Questions (OwnerId);
+    CREATE INDEX IX_Questions_TopicId_Type ON dbo.Questions (TopicId, [Type]);
+    CREATE INDEX IX_Questions_OwnerId      ON dbo.Questions (OwnerId);
 END
 GO

@@ -13,9 +13,10 @@ namespace Scholar.Models
         [Display(Name = "Logo")]
         public string? LogoUrl { get; set; }
 
-        /// <summary>Address / contact line shown in the paper header.</summary>
         [Display(Name = "Address")]
         public string? Address { get; set; }
+
+        public string? DashboardLayout { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

@@ -176,13 +176,18 @@ namespace Scholar.Controllers
                 }
             }
 
+            string? layoutUserId = _userManager.GetUserId(User);
             model.LayoutJson = instituteId is int layoutInstituteId
                 ? await _instituteRepository.Query()
                                             .AsNoTracking()
                                             .Where(i => i.Id == layoutInstituteId)
                                             .Select(i => i.DashboardLayout)
                                             .FirstOrDefaultAsync()
-                : (await _userManager.GetUserAsync(User))?.DashboardLayout;
+                : await _userManager.Users
+                                    .AsNoTracking()
+                                    .Where(u => u.Id == layoutUserId)
+                                    .Select(u => u.DashboardLayout)
+                                    .FirstOrDefaultAsync();
 
             return View(model);
         }

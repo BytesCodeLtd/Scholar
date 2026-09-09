@@ -11,10 +11,6 @@
          data-save-url="@Url.Action("SaveLayout")"
          data-reset-url="@Url.Action("ResetLayout")"
          data-layout='@(Model.LayoutJson ?? "")'>
-        <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-gray-400">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" /></svg>
-            Drag cards to rearrange
-        </span>
         <button type="button" data-arrange-reset
                 class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
             Reset layout

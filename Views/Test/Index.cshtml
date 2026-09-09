@@ -10,13 +10,29 @@
         : $"{count} paper{(count == 1 ? "" : "s")} saved {scope}";
 }
 
+@functions {
+    static string TypeBadge(string? type)
+    {
+        string[] palette =
+        {
+            "bg-teal-50 text-teal-700",
+            "bg-violet-50 text-violet-700",
+            "bg-amber-50 text-amber-700",
+            "bg-rose-50 text-rose-700",
+            "bg-sky-50 text-sky-700",
+            "bg-emerald-50 text-emerald-700",
+        };
+        if (string.IsNullOrWhiteSpace(type)) return palette[1];
+        int sum = 0;
+        foreach (char c in type) { sum += c; }
+        return palette[sum % palette.Length];
+    }
+}
+
 <div class="mb-6 flex justify-end">
     <a asp-controller="Board" asp-action="Index"
        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-100">
-        <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 1v16M1 9h16" />
-        </svg>
-        Generate paper
+        +
     </a>
 </div>
 
@@ -43,63 +59,107 @@ else
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         @foreach (var paper in Model)
         {
-            <article class="group relative flex flex-col overflow-hidden rounded-xl bg-white border border-gray-200 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand-600/10 hover:border-brand-500/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
-                @* Whole card opens the paper. *@
-                <a asp-controller="Test" asp-action="Print" asp-route-id="@paper.Id" class="absolute inset-0 z-10" aria-label="Open @paper.Title"></a>
-                @* Brand rule down the spine of the paper. *@
-                <span class="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-brand-500 to-brand-700 transition-all duration-200 group-hover:w-1.5"></span>
-
-                <div class="px-5 pt-5">
-                    <div class="flex items-start justify-between gap-3">
-                        @* Paper type reads like the stamp on a real exam header. *@
-                        <span class="text-[11px] font-semibold uppercase tracking-[0.15em] text-brand-700">
+            <article class="group relative flex flex-col rounded-2xl bg-white border border-gray-200 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-600/10 hover:border-brand-500/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+                <div class="p-5">
+                    <div class="flex items-start justify-between gap-2">
+                        @* Color-coded paper type, like a stamp on the exam header. *@
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider @TypeBadge(paper.Type)">
                             @(string.IsNullOrWhiteSpace(paper.Type) ? "Question Paper" : paper.Type)
                         </span>
-                        @if (!string.IsNullOrWhiteSpace(paper.Subject))
+
+                        <div class="flex items-center gap-1.5">
+                            <div class="relative">
+                                <button type="button" data-dropdown-toggle="paper-menu-@paper.Id" data-dropdown-placement="bottom-end"
+                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                                        aria-label="Paper actions">
+                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                                        <path d="M10 6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm0 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm0 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" />
+                                    </svg>
+                                </button>
+                                <div id="paper-menu-@paper.Id" class="z-30 hidden w-48 rounded-xl border border-gray-100 bg-white py-1 text-sm shadow-lg shadow-gray-900/10">
+                                    <a asp-controller="Test" asp-action="Print" asp-route-id="@paper.Id"
+                                       class="flex items-center gap-2.5 px-3 py-2 text-gray-700 hover:bg-gray-50">
+                                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" stroke-width="2" /></svg>
+                                        Open
+                                    </a>
+                                    <a asp-controller="Test" asp-action="Print" asp-route-id="@paper.Id" target="_blank"
+                                       class="flex items-center gap-2.5 px-3 py-2 text-gray-700 hover:bg-gray-50">
+                                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" /></svg>
+                                        Download PDF
+                                    </a>
+                                    <button type="button" disabled title="Coming soon" class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-gray-300 cursor-not-allowed">
+                                        <svg class="h-4 w-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 8h12v12H8z M4 16V4h12" /></svg>
+                                        Duplicate
+                                    </button>
+                                    <button type="button" disabled title="Coming soon" class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-gray-300 cursor-not-allowed">
+                                        <svg class="h-4 w-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.5-9.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 8.5-8.5Z" /></svg>
+                                        Rename
+                                    </button>
+                                    <button type="button" disabled title="Coming soon" class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-gray-300 cursor-not-allowed">
+                                        <svg class="h-4 w-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13" /></svg>
+                                        Share
+                                    </button>
+                                    <div class="my-1 border-t border-gray-100"></div>
+                                    <button type="button" class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-rose-600 hover:bg-rose-50">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0v12a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7" /></svg>
+                                        Delete Paper
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a asp-controller="Test" asp-action="Print" asp-route-id="@paper.Id" class="mt-3 block focus:outline-none">
+                        <h2 class="text-lg font-semibold leading-snug text-gray-900 line-clamp-2 group-hover:text-brand-700">
+                            @paper.Title
+                        </h2>
+                    </a>
+
+                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
+                        <span class="inline-flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-gray-400" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 20 20">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.5 1v3m-7-3v3m-3 4h16M2 3h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+                            </svg>
+                            @paper.Date.ToString("dd MMM yyyy")
+                        </span>
+                        @if (isSuperAdmin && !string.IsNullOrWhiteSpace(paper.Institute))
                         {
-                            <span class="shrink-0 inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-                                @paper.Subject
+                            <span class="inline-flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-gray-400" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0H5m14 0h2m-2 0h-4m-6 0H3m2 0h4m0 0v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4m-4 0h4" />
+                                </svg>
+                                @paper.Institute
                             </span>
                         }
                     </div>
-
-                    <h2 class="mt-2 text-lg font-semibold leading-snug text-gray-900 line-clamp-2 group-hover:text-brand-700">
-                        @paper.Title
-                    </h2>
-
-                    <p class="mt-1.5 flex items-center gap-1.5 text-sm text-gray-500">
-                        <svg class="w-4 h-4 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.5 1v3m-7-3v3m-3 4h16M2 3h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
-                        </svg>
-                        @paper.Date.ToString("dd MMM yyyy")
-                    </p>
-
-                    @if (isSuperAdmin && !string.IsNullOrWhiteSpace(paper.Institute))
-                    {
-                        <p class="mt-1.5 flex items-center gap-1.5 text-sm text-gray-500">
-                            <svg class="w-4 h-4 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0H5m14 0h2m-2 0h-4m-6 0H3m2 0h4m0 0v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4m-4 0h4" />
-                            </svg>
-                            @paper.Institute
-                        </p>
-                    }
                 </div>
 
-                @* Tear line — the perforation under a paper's header block. *@
-                <div class="mt-5 border-t border-dashed border-gray-200"></div>
+                @* Stats strip: the paper's headline numbers. *@
+                <div class="grid grid-cols-2 divide-x divide-gray-100 border-t border-dashed border-gray-200 bg-gray-50/70 text-center">
+                    <div class="px-2 py-3">
+                        <div class="flex items-center justify-center gap-1 text-gray-400">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.48 3.5a.56.56 0 0 1 1.04 0l2.12 4.29 4.73.69a.56.56 0 0 1 .31.96l-3.42 3.33.81 4.71a.56.56 0 0 1-.82.59L12 16.9l-4.23 2.22a.56.56 0 0 1-.81-.59l.8-4.71-3.42-3.33a.56.56 0 0 1 .31-.96l4.73-.69 2.11-4.29Z" /></svg>
+                            <span class="text-[10px] font-medium uppercase tracking-wide">Marks</span>
+                        </div>
+                        <p class="mt-1 text-xl font-bold leading-none text-brand-700">@paper.TotalMarks</p>
+                    </div>
+                    <div class="px-2 py-3">
+                        <div class="flex items-center justify-center gap-1 text-gray-400">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                            <span class="text-[10px] font-medium uppercase tracking-wide">Time</span>
+                        </div>
+                        <p class="mt-1 text-xl font-bold leading-none text-gray-900">@paper.DurationMinutes<span class="text-xs font-medium text-gray-400"> min</span></p>
+                    </div>
+                </div>
 
-                <dl class="grid grid-cols-2 divide-x divide-gray-100 bg-gray-50">
-                    <div class="px-5 py-3">
-                        <dt class="text-[10px] font-medium uppercase tracking-wide text-gray-400">Max Marks</dt>
-                        <dd class="mt-0.5 text-2xl font-bold leading-none text-brand-700">@paper.TotalMarks</dd>
-                    </div>
-                    <div class="px-5 py-3">
-                        <dt class="text-[10px] font-medium uppercase tracking-wide text-gray-400">Time Allowed</dt>
-                        <dd class="mt-0.5 text-2xl font-bold leading-none text-gray-900">
-                            @paper.DurationMinutes<span class="ms-1 text-sm font-medium text-gray-400">min</span>
-                        </dd>
-                    </div>
-                </dl>
+                <div class="flex items-center justify-between rounded-b-2xl border-t border-gray-100 px-5 py-3">
+                    <a asp-controller="Test" asp-action="Print" asp-route-id="@paper.Id"
+                       class="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 hover:text-brand-800">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0-5 5m5-5H6" /></svg>
+                        Quick Open
+                    </a>
+                    <span class="text-xs text-gray-400">@paper.CreatedAt.ToString("dd MMM yyyy")</span>
+                </div>
             </article>
         }
     </div>

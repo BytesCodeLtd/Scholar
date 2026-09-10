@@ -25,6 +25,16 @@ namespace Scholar.Common.Identity
                 identity.AddClaim(new Claim(AppClaims.InstituteId, instituteId.ToString()));
             }
 
+            if (!string.IsNullOrWhiteSpace(user.FullName))
+            {
+                identity.AddClaim(new Claim(AppClaims.FullName, user.FullName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.Email))
+            {
+                identity.AddClaim(new Claim(AppClaims.Email, user.Email));
+            }
+
             return identity;
         }
     }
@@ -33,5 +43,20 @@ namespace Scholar.Common.Identity
     {
         public static int? GetInstituteId(this ClaimsPrincipal principal)
             => int.TryParse(principal.FindFirstValue(AppClaims.InstituteId), out int id) ? id : null;
+
+        public static string GetDisplayName(this ClaimsPrincipal principal)
+        {
+            string? name = principal.FindFirstValue(AppClaims.FullName);
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                return name;
+            }
+
+            return principal.GetEmail() ?? principal.Identity?.Name ?? "User";
+        }
+
+        public static string? GetEmail(this ClaimsPrincipal principal)
+            => principal.FindFirstValue(AppClaims.Email);
     }
 }

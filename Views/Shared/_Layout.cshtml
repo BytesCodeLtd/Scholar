@@ -1,11 +1,12 @@
 @using Microsoft.AspNetCore.Identity
+@using Scholar.Common.Identity
 @using Scholar.Models
 @inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
 @{
-    ApplicationUser? currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
-    string? displayName = currentUser?.FullName ?? currentUser?.Email ?? "User";
-    string? initial = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Trim()[..1].ToUpper();
+    bool isSignedIn = SignInManager.IsSignedIn(User);
+    string displayName = isSignedIn ? User.GetDisplayName() : "User";
+    string? email = isSignedIn ? User.GetEmail() : null;
+    string initial = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Trim()[..1].ToUpper();
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -66,7 +67,7 @@
                                  class="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-lg border border-gray-100 w-56">
                                 <div class="px-4 py-3">
                                     <span class="block text-sm font-medium text-gray-900 truncate">@displayName</span>
-                                    <span class="block text-sm text-gray-500 truncate">@currentUser?.Email</span>
+                                    <span class="block text-sm text-gray-500 truncate">@email</span>
                                 </div>
                                 <ul class="py-2" aria-labelledby="user-menu-button">
                                     <li>

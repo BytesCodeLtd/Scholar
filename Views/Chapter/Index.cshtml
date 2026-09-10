@@ -31,7 +31,7 @@ else
         {
             <div class="mb-4 max-w-sm">
                 <label for="instituteId" class="mb-1 block text-sm font-medium text-gray-900">Institute</label>
-                <select id="instituteId" name="instituteId" required
+                <select id="instituteId" name="instituteId" required data-searchable
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5">
                     <option value="" disabled selected>Select an institute…</option>
                     @foreach (var inst in institutes)
@@ -78,7 +78,7 @@ else
                     @if (chapter.Topics.Any())
                     {
                         <div class="chapter-body px-4 pb-4 pt-1">
-                            <div class="ml-4 space-y-0.5 border-l-[3px] border-brand-500 pl-3">
+                            <div class="ml-2 space-y-0.5 pl-1">
                                 @foreach (var topic in chapter.Topics.OrderBy(t => t.Number))
                                 {
                                     <label for="topic-@topic.Id"
@@ -96,7 +96,7 @@ else
                     else
                     {
                         <div class="chapter-body px-4 pb-4 pt-1">
-                            <p class="ml-4 border-l-[3px] border-brand-500 pl-3 py-2 text-sm text-gray-400">No topics in this chapter.</p>
+                            <p class="ml-2 pl-1 py-2 text-sm text-gray-400">No topics in this chapter.</p>
                         </div>
                     }
                 </details>

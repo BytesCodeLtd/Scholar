@@ -1,0 +1,91 @@
+/* Brand theming for Tom Select so searchable dropdowns match the app's
+   standard inputs (gray-50 field, brand-purple focus + selection). */
+
+:root {
+    --ss-brand-50: #f2f0f7;
+    --ss-brand-100: #e3dfef;
+    --ss-brand-500: #7d68b0;
+    --ss-brand-600: #675496;
+}
+
+.ts-wrapper {
+    font-size: 0.875rem; /* text-sm, matches native selects */
+}
+
+/* Tom Select copies the original <select>'s utility classes (bg, border,
+   padding, rounded) onto the wrapper. Neutralise them so the field box is
+   drawn only once, by .ts-control — otherwise you get a box inside a box. */
+.ts-wrapper {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+/* The visible field */
+.ts-control {
+    background-color: #f9fafb;               /* bg-gray-50 */
+    border: 1px solid #d1d5db;               /* border-gray-300 */
+    border-radius: 0.5rem;                   /* rounded-lg */
+    padding: 0.5rem 0.75rem;                 /* ~p-2.5 */
+    color: #111827;                          /* text-gray-900 */
+    box-shadow: none;
+    min-height: 42px;
+}
+
+.ts-wrapper.focus .ts-control,
+.ts-control:focus-within {
+    border-color: var(--ss-brand-500);
+    box-shadow: 0 0 0 3px var(--ss-brand-100);
+}
+
+.ts-wrapper.disabled .ts-control {
+    background-color: #f3f4f6;
+    opacity: 0.7;
+}
+
+.ts-control input,
+.ts-control input::placeholder {
+    color: #6b7280;                          /* placeholder gray-500 */
+}
+
+/* The dropdown panel */
+.ts-dropdown {
+    border: 1px solid #e5e7eb;               /* border-gray-200 */
+    border-radius: 0.75rem;                  /* rounded-xl */
+    box-shadow: 0 10px 25px -5px rgba(17, 24, 39, 0.12);
+    overflow: hidden;
+    margin-top: 0.25rem;
+}
+
+.ts-dropdown .option {
+    padding: 0.5rem 0.75rem;
+    color: #374151;                          /* text-gray-700 */
+}
+
+.ts-dropdown .option.active {
+    background-color: var(--ss-brand-50);
+    color: var(--ss-brand-600);
+}
+
+.ts-dropdown .option[aria-selected="true"] {
+    font-weight: 600;
+}
+
+.ts-dropdown .ts-no-results {
+    padding: 0.5rem 0.75rem;
+    color: #9ca3af;                          /* text-gray-400 */
+}
+
+/* Multi-select chips */
+.ts-control .item {
+    background-color: var(--ss-brand-50);
+    color: var(--ss-brand-600);
+    border-radius: 0.375rem;
+    padding: 0.05rem 0.4rem;
+}
+
+.ts-control .item .remove {
+    border-left-color: var(--ss-brand-100);
+}

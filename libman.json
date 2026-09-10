@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "defaultProvider": "jsdelivr",
+  "libraries": [
+    {
+      "library": "flowbite@2.5.2",
+      "destination": "wwwroot/lib/flowbite/",
+      "files": [ "dist/flowbite.min.js" ]
+    },
+    {
+      "library": "tom-select@2.4.1",
+      "destination": "wwwroot/lib/tom-select/",
+      "files": [ "dist/js/tom-select.complete.min.js", "dist/css/tom-select.min.css" ]
+    }
+  ]
+}

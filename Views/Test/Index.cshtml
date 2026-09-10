@@ -59,54 +59,25 @@ else
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         @foreach (var paper in Model)
         {
-            <article class="group relative flex flex-col rounded-2xl bg-white border border-gray-200 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-600/10 hover:border-brand-500/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+            <article class="group relative flex flex-col overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand-600/10 hover:border-brand-500/40 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
+                @* Hover overlay: blurs/dims the card and reveals the actions centered in the middle. *@
+                <div class="pointer-events-none absolute inset-0 z-20 flex items-center justify-center gap-3 rounded-2xl bg-white/40 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
+                    <a asp-controller="Test" asp-action="Print" asp-route-id="@paper.Id"
+                       title="Open Preview" aria-label="Open Preview"
+                       class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-gray-600 shadow-md ring-1 ring-gray-200 transition hover:bg-brand-600 hover:text-white hover:ring-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-300">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6v-8z" /></svg>
+                    </a>
+                    <button type="button" title="Delete Paper" aria-label="Delete Paper"
+                            class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white text-gray-600 shadow-md ring-1 ring-gray-200 transition hover:bg-rose-600 hover:text-white hover:ring-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-300">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" /></svg>
+                    </button>
+                </div>
                 <div class="p-5">
-                    <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-start gap-2">
                         @* Color-coded paper type, like a stamp on the exam header. *@
                         <span class="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider @TypeBadge(paper.Type)">
                             @(string.IsNullOrWhiteSpace(paper.Type) ? "Question Paper" : paper.Type)
                         </span>
-
-                        <div class="flex items-center gap-1.5">
-                            <div class="relative">
-                                <button type="button" data-dropdown-toggle="paper-menu-@paper.Id" data-dropdown-placement="bottom-end"
-                                        class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                                        aria-label="Paper actions">
-                                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                                        <path d="M10 6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm0 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm0 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" />
-                                    </svg>
-                                </button>
-                                <div id="paper-menu-@paper.Id" class="z-30 hidden w-48 rounded-xl border border-gray-100 bg-white py-1 text-sm shadow-lg shadow-gray-900/10">
-                                    <a asp-controller="Test" asp-action="Print" asp-route-id="@paper.Id"
-                                       class="flex items-center gap-2.5 px-3 py-2 text-gray-700 hover:bg-gray-50">
-                                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" stroke-width="2" /></svg>
-                                        Open
-                                    </a>
-                                    <a asp-controller="Test" asp-action="Print" asp-route-id="@paper.Id" target="_blank"
-                                       class="flex items-center gap-2.5 px-3 py-2 text-gray-700 hover:bg-gray-50">
-                                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14" /></svg>
-                                        Download PDF
-                                    </a>
-                                    <button type="button" disabled title="Coming soon" class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-gray-300 cursor-not-allowed">
-                                        <svg class="h-4 w-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 8h12v12H8z M4 16V4h12" /></svg>
-                                        Duplicate
-                                    </button>
-                                    <button type="button" disabled title="Coming soon" class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-gray-300 cursor-not-allowed">
-                                        <svg class="h-4 w-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.5-9.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 8.5-8.5Z" /></svg>
-                                        Rename
-                                    </button>
-                                    <button type="button" disabled title="Coming soon" class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-gray-300 cursor-not-allowed">
-                                        <svg class="h-4 w-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13" /></svg>
-                                        Share
-                                    </button>
-                                    <div class="my-1 border-t border-gray-100"></div>
-                                    <button type="button" class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-rose-600 hover:bg-rose-50">
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0v12a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V7" /></svg>
-                                        Delete Paper
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <a asp-controller="Test" asp-action="Print" asp-route-id="@paper.Id" class="mt-3 block focus:outline-none">

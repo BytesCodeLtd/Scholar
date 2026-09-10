@@ -17,6 +17,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/tom-select/dist/css/tom-select.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/searchable-select.css" asp-append-version="true" />
 </head>
 <body class="min-h-screen sm:h-screen sm:overflow-hidden flex flex-col bg-gray-50 text-gray-900">
     <partial name="_Toast" />
@@ -105,7 +107,9 @@
         </main>
     </div>
 
-    <script src="~/lib/flowbite/flowbite.min.js"></script>
+    <script src="~/lib/flowbite/dist/flowbite.min.js"></script>
+    <script src="~/lib/tom-select/dist/js/tom-select.complete.min.js"></script>
+    <script src="~/js/searchable-select.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

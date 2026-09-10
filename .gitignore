@@ -8,6 +8,9 @@ node_modules/
 # Generated Tailwind output (rebuilt by CI/MSBuild)
 wwwroot/css/app.css
 
+# Client-side libraries (restored from libman.json by LibMan on build)
+wwwroot/lib/
+
 # Visual Studio / Rider
 .vs/
 .idea/

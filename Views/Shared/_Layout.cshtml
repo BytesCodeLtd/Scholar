@@ -1,11 +1,12 @@
 @using Microsoft.AspNetCore.Identity
+@using Scholar.Common.Identity
 @using Scholar.Models
 @inject SignInManager<ApplicationUser> SignInManager
-@inject UserManager<ApplicationUser> UserManager
 @{
-    ApplicationUser? currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
-    string? displayName = currentUser?.FullName ?? currentUser?.Email ?? "User";
-    string? initial = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Trim()[..1].ToUpper();
+    bool isSignedIn = SignInManager.IsSignedIn(User);
+    string displayName = isSignedIn ? User.GetDisplayName() : "User";
+    string? email = isSignedIn ? User.GetEmail() : null;
+    string initial = string.IsNullOrWhiteSpace(displayName) ? "U" : displayName.Trim()[..1].ToUpper();
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -13,9 +14,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="preload" href="~/fonts/poppins/poppins-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="~/fonts/poppins/poppins-500-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/tom-select/dist/css/tom-select.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/searchable-select.css" asp-append-version="true" />
@@ -66,7 +67,7 @@
                                  class="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow-lg border border-gray-100 w-56">
                                 <div class="px-4 py-3">
                                     <span class="block text-sm font-medium text-gray-900 truncate">@displayName</span>
-                                    <span class="block text-sm text-gray-500 truncate">@currentUser?.Email</span>
+                                    <span class="block text-sm text-gray-500 truncate">@email</span>
                                 </div>
                                 <ul class="py-2" aria-labelledby="user-menu-button">
                                     <li>

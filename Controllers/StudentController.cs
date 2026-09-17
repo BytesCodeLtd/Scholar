@@ -1,118 +1,35 @@
-using System.Linq.Dynamic.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Scholar.Common.Identity;
 using Scholar.Common.Paging;
 using Scholar.Constants;
-using Scholar.Enums;
-using Scholar.Models;
 using Scholar.Models.ViewModels;
-using Scholar.Repositories;
+using Scholar.Services;
 
 namespace Scholar.Controllers
 {
     [Authorize(Roles = Roles.SuperAdmin + "," + Roles.InstituteAdmin)]
     public class StudentController : Controller
     {
-        private readonly IRepository<Student> _students;
-        private readonly IRepository<Grade> _grades;
-        private readonly IRepository<Institute> _institutes;
-        private readonly IRepository<Attendance> _attendance;
+        private readonly IStudentService _students;
+        private readonly ILogger<StudentController> _logger;
 
-        public StudentController(
-            IRepository<Student> students,
-            IRepository<Grade> grades,
-            IRepository<Institute> institutes,
-            IRepository<Attendance> attendance)
+        public StudentController(IStudentService students, ILogger<StudentController> logger)
         {
             _students = students;
-            _grades = grades;
-            _institutes = institutes;
-            _attendance = attendance;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> Index([FromQuery] PageParameters? tableParams = null)
         {
-            tableParams ??= new PageParameters();
-
-            (bool isSuperAdmin, int? instituteId) = GetScope();
-
-            IQueryable<Student> students = _students.Query();
-
-            if (!isSuperAdmin)
-            {
-                students = students.Where(s => s.InstituteId == instituteId);
-            }
-
-            if (!string.IsNullOrWhiteSpace(tableParams.Search))
-            {
-                string term = tableParams.Search;
-                students = students.Where(s =>
-                    s.FullName.Contains(term) ||
-                    (s.RollNumber != null && s.RollNumber.Contains(term)) ||
-                    s.Grade.Name.Contains(term) ||
-                    (s.Section != null && s.Section.Contains(term)));
-            }
-
-            IQueryable<StudentRow> rows = students.Select(s => new StudentRow
-            {
-                Id = s.Id,
-                Name = s.FullName,
-                RollNumber = s.RollNumber,
-                Class = s.Grade.Name,
-                Section = s.Section,
-                Guardian = s.GuardianName,
-                Phone = s.PhoneNumber,
-                Institute = s.Institute.Name,
-                IsActive = s.IsActive
-            });
-
-            // Id isn't a display column, so the default/unset sort falls back to Name.
-            string orderBy = tableParams.OrderBy;
-            if (string.IsNullOrWhiteSpace(orderBy) || orderBy.StartsWith("Id", StringComparison.OrdinalIgnoreCase))
-            {
-                orderBy = "Name asc";
-            }
-            rows = rows.OrderBy(orderBy);
-
-            Scholar.Common.Paging.PagedResult<StudentRow> paged = await _students.GetPagedAsync(rows, tableParams.Page, tableParams.PageSize);
-
+            PagedResult<StudentRow> paged = await _students.GetRosterAsync(tableParams ?? new PageParameters());
             return View(paged);
         }
 
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
-            (bool isSuperAdmin, int? instituteId) = GetScope();
-
-            IQueryable<Student> students = _students.Query();
-
-            if (!isSuperAdmin)
-            {
-                students = students.Where(s => s.InstituteId == instituteId);
-            }
-
-            StudentDetailsViewModel? model = await students
-                .Where(s => s.Id == id)
-                .Select(s => new StudentDetailsViewModel
-                {
-                    Id = s.Id,
-                    FullName = s.FullName,
-                    RollNumber = s.RollNumber,
-                    Class = s.Grade.Name,
-                    Section = s.Section,
-                    Gender = s.Gender,
-                    DateOfBirth = s.DateOfBirth,
-                    GuardianName = s.GuardianName,
-                    PhoneNumber = s.PhoneNumber,
-                    Institute = s.Institute.Name,
-                    IsActive = s.IsActive,
-                    CreatedAt = s.CreatedAt
-                })
-                .FirstOrDefaultAsync();
+            StudentDetailsViewModel? model = await _students.GetDetailsAsync(id);
 
             if (model is null)
             {
@@ -120,42 +37,20 @@ namespace Scholar.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // All-time status counts for the summary tiles.
-            var counts = await _attendance.Query()
-                                          .Where(a => a.StudentId == id)
-                                          .GroupBy(a => a.Status)
-                                          .Select(g => new { Status = g.Key, Count = g.Count() })
-                                          .ToListAsync();
-
-            model.PresentCount = counts.FirstOrDefault(c => c.Status == AttendanceStatus.Present)?.Count ?? 0;
-            model.AbsentCount = counts.FirstOrDefault(c => c.Status == AttendanceStatus.Absent)?.Count ?? 0;
-            model.LateCount = counts.FirstOrDefault(c => c.Status == AttendanceStatus.Late)?.Count ?? 0;
-            model.LeaveCount = counts.FirstOrDefault(c => c.Status == AttendanceStatus.Leave)?.Count ?? 0;
-
-            // Most recent marks for the history list.
-            model.AttendanceHistory = await _attendance.Query()
-                .Where(a => a.StudentId == id)
-                .OrderByDescending(a => a.Date)
-                .Take(30)
-                .Select(a => new AttendanceHistoryItem { Date = a.Date, Status = a.Status })
-                .ToListAsync();
-
             return View(model);
         }
 
         [HttpGet]
         public async Task<IActionResult> Create()
         {
-            (bool isSuperAdmin, int? instituteId) = GetScope();
-
-            if (!isSuperAdmin && instituteId is null)
+            if (!_students.CanOpenAdmissionForm)
             {
                 TempData["Error"] = Message.AccountNotLinkedToInstitute;
                 return RedirectToAction(nameof(Index));
             }
 
             CreateStudentViewModel model = new();
-            await PopulateOptionsAsync(model, isSuperAdmin);
+            await _students.PopulateCreateOptionsAsync(model);
 
             return View(model);
         }
@@ -164,68 +59,74 @@ namespace Scholar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateStudentViewModel model)
         {
-            (bool isSuperAdmin, int? instituteId) = GetScope();
-
-            // A super admin picks the institute; an institute admin is fixed to their own.
-            int? targetInstituteId = isSuperAdmin ? model.InstituteId : instituteId;
-
-            if (targetInstituteId is null)
+            if (ModelState.IsValid && await _students.CreateAsync(model))
             {
-                ModelState.AddModelError(
-                    isSuperAdmin ? nameof(model.InstituteId) : string.Empty,
-                    isSuperAdmin ? MsgKey.Validation.Required(Key.Institute) : "Your account is not linked to an institute.");
+                _logger.LogInformation("Student {Name} created.", model.FullName);
+                TempData["Success"] = MsgKey.Success.Created(Key.Student);
+                return RedirectToAction(nameof(Index));
             }
 
-            if (!ModelState.IsValid)
+            if (ModelState.IsValid)
             {
-                await PopulateOptionsAsync(model, isSuperAdmin);
-                return View(model);
+                _logger.LogWarning("Student create failed: no institute resolved.");
+                ModelState.AddModelError(nameof(model.InstituteId), "Select an institute.");
             }
 
-            Student student = new()
+            await _students.PopulateCreateOptionsAsync(model);
+            return View(model);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Register()
+        {
+            if (!_students.CanOpenAdmissionForm)
             {
-                InstituteId = targetInstituteId!.Value,
-                GradeId = model.GradeId,
-                FullName = model.FullName.Trim(),
-                RollNumber = model.RollNumber?.Trim(),
-                Section = model.Section?.Trim(),
-                Gender = model.Gender,
-                DateOfBirth = model.DateOfBirth,
-                GuardianName = model.GuardianName?.Trim(),
-                PhoneNumber = model.PhoneNumber?.Trim()
-            };
+                TempData["Error"] = Message.AccountNotLinkedToInstitute;
+                return RedirectToAction(nameof(Index));
+            }
 
-            await _students.AddAsync(student);
-            await _students.SaveChangesAsync();
+            RegisterStudentViewModel model = new();
+            await _students.PopulateRegisterOptionsAsync(model);
 
-            TempData["Success"] = MsgKey.Success.Created(Key.Student);
+            return View(model);
+        }
 
-            return RedirectToAction(nameof(Index));
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterStudentViewModel model)
+        {
+            if (ModelState.IsValid && await _students.RegisterAsync(model))
+            {
+                _logger.LogInformation("Student {First} {Last} registered.", model.FirstName, model.LastName);
+                TempData["Success"] = MsgKey.Success.Created(Key.Student);
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (ModelState.IsValid)
+            {
+                _logger.LogWarning("Student registration failed: no institute resolved.");
+                ModelState.AddModelError(nameof(model.InstituteId), "Select an institute.");
+            }
+
+            await _students.PopulateRegisterOptionsAsync(model);
+            return View(model);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            (bool isSuperAdmin, int? instituteId) = GetScope();
-
-            if (!isSuperAdmin)
+            bool ok = await _students.DeactivateAsync(id);
+            if (ok)
             {
-                bool ownsStudent = await _students.Query()
-                    .AnyAsync(s => s.Id == id && s.InstituteId == instituteId);
-
-                if (!ownsStudent)
-                {
-                    return Forbid();
-                }
+                _logger.LogInformation("Student {Id} deactivated.", id);
+            }
+            else
+            {
+                _logger.LogWarning("Deactivate failed: student {Id} not found.", id);
             }
 
-            bool deactivated = await _students.SoftDeleteAsync(id);
-
-            TempData[deactivated ? "Success" : "Error"] = deactivated
-                ? "Student deactivated."
-                : "Student not found.";
-
+            TempData[ok ? "Success" : "Error"] = ok ? "Student deactivated." : "Student not found.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -233,56 +134,18 @@ namespace Scholar.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Activate(int id)
         {
-            (bool isSuperAdmin, int? instituteId) = GetScope();
-
-            // Institute admins may only activate their own institute's students.
-            if (!isSuperAdmin)
+            bool ok = await _students.ActivateAsync(id);
+            if (ok)
             {
-                bool ownsStudent = await _students.Query()
-                    .AnyAsync(s => s.Id == id && s.InstituteId == instituteId);
-
-                if (!ownsStudent)
-                {
-                    return Forbid();
-                }
+                _logger.LogInformation("Student {Id} activated.", id);
+            }
+            else
+            {
+                _logger.LogWarning("Activate failed: student {Id} not found.", id);
             }
 
-            bool activated = await _students.ActivateAsync(id);
-
-            TempData[activated ? "Success" : "Error"] = activated
-                ? "Student activated."
-                : "Student not found.";
-
+            TempData[ok ? "Success" : "Error"] = ok ? "Student activated." : "Student not found.";
             return RedirectToAction(nameof(Index));
-        }
-
-        /// <summary>Resolves whether the current user is a super admin and their institute (if any).</summary>
-        private (bool isSuperAdmin, int? instituteId) GetScope()
-            => (User.IsInRole(Roles.SuperAdmin), User.GetInstituteId());
-
-        /// <summary>Fills the class dropdown (and, for super admins, the institute dropdown).</summary>
-        private async Task PopulateOptionsAsync(CreateStudentViewModel model, bool isSuperAdmin)
-        {
-            model.GradeOptions = await _grades.Query()
-                .Where(g => g.IsActive)
-                .OrderBy(g => g.Name)
-                .Select(g => new SelectListItem
-                {
-                    Value = g.Id.ToString(),
-                    Text = g.Name
-                })
-                .ToListAsync();
-
-            model.ShowInstitute = isSuperAdmin;
-
-            if (isSuperAdmin)
-            {
-                model.InstituteOptions = await _institutes.Query()
-                    .Where(i => i.IsActive)
-                    .OrderBy(i => i.Name)
-                    .Select(i => new SelectListItem { Value = i.Id.ToString(), Text = i.Name })
-                    .ToListAsync();
-            }
         }
     }
 }

@@ -11,6 +11,11 @@
   </Target>
 
   <ItemGroup>
+    <!-- Email HTML templates read at runtime; ship them alongside the app. -->
+    <Content Include="Templates\**\*.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="16.2.0" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.102.3" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.10" />

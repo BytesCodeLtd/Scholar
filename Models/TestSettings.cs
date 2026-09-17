@@ -2,7 +2,7 @@ using Scholar.Enums;
 
 namespace Scholar.Models
 {
-    public class TestSettings : IAuditableEntity
+    public class TestSettings : IAuditableEntity, ITenantEntity
     {
         public int Id { get; set; }
 

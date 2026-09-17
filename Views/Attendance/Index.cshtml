@@ -45,14 +45,23 @@
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-900">Date</label>
-                <input name="date" type="date" value="@Model.Date.ToString("yyyy-MM-dd")" class="@field" />
+                <div class="relative">
+                    <div class="absolute inset-y-0 start-0 flex items-center ps-3.5 pointer-events-none">
+                        <svg class="h-4 w-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4ZM0 18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8H0v10Zm5-8h10a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z" />
+                        </svg>
+                    </div>
+                    <input name="date" type="text" datepicker datepicker-autohide datepicker-format="yyyy-mm-dd"
+                           value="@Model.Date.ToString("yyyy-MM-dd")" placeholder="Select date"
+                           class="@field ps-10" />
+                </div>
             </div>
 
             @if (Model.ShowInstitute)
             {
                 <div>
                     <label class="mb-1 block text-sm font-medium text-gray-900">Institute</label>
-                    <select name="instituteId" asp-items="Model.InstituteOptions" class="@field">
+                    <select name="instituteId" asp-items="Model.InstituteOptions" class="@field" data-searchable>
                         <option value="">Select institute</option>
                     </select>
                 </div>
@@ -60,7 +69,7 @@
 
             <div>
                 <label class="mb-1 block text-sm font-medium text-gray-900">Class</label>
-                <select name="gradeId" asp-items="Model.GradeOptions" class="@field">
+                <select name="gradeId" asp-items="Model.GradeOptions" class="@field" data-searchable>
                     <option value="">Select class</option>
                 </select>
             </div>
@@ -97,6 +106,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/chapter.js" asp-append-version="true"></script>
     <script>
         (function () {
             // Restore the chosen institute/class selection after a GET reload.

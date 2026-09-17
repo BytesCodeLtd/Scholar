@@ -1,0 +1,96 @@
+@model Scholar.Models.ViewModels.GenerateInvoicesViewModel
+@{
+    ViewData["Title"] = "Generate Invoices";
+    string field = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2.5";
+    string label = "mb-1 block text-sm font-medium text-gray-900";
+    string err = "mt-1 block text-sm text-red-600";
+}
+
+<div class="max-w-3xl rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <form asp-controller="Fees" asp-action="Generate" method="post" class="space-y-5">
+        <div asp-validation-summary="ModelOnly" class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3"></div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            @if (Model.ShowInstitute)
+            {
+                <div class="sm:col-span-2">
+                    <label asp-for="InstituteId" class="@label">Institute</label>
+                    <select asp-for="InstituteId" asp-items="Model.InstituteOptions" class="@field" data-searchable
+                            onchange="location.href='@Url.Action("Generate")?instituteId=' + this.value">
+                        <option value="">Select institute</option>
+                    </select>
+                    <span asp-validation-for="InstituteId" class="@err"></span>
+                    <p class="mt-1 text-xs text-gray-500">Pick an institute to load its classes and fee categories.</p>
+                </div>
+            }
+            else
+            {
+                <input type="hidden" asp-for="InstituteId" />
+            }
+
+            <div>
+                <label asp-for="GradeId" class="@label"></label>
+                <select asp-for="GradeId" asp-items="Model.GradeOptions" class="@field" data-searchable>
+                    <option value="">Select class</option>
+                </select>
+                <span asp-validation-for="GradeId" class="@err"></span>
+            </div>
+
+            <div>
+                <label asp-for="Section" class="@label"></label>
+                <input asp-for="Section" class="@field" placeholder="e.g. A (leave blank for all)" />
+            </div>
+
+            <div>
+                <label asp-for="Period" class="@label"></label>
+                <input asp-for="Period" class="@field" placeholder="e.g. September 2026" />
+                <span asp-validation-for="Period" class="@err"></span>
+            </div>
+
+            <div>
+                <label asp-for="DueDate" class="@label"></label>
+                <input asp-for="DueDate" type="date" class="@field" />
+                <span asp-validation-for="DueDate" class="@err"></span>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="mb-2 text-sm font-semibold text-gray-900">Fee items</h3>
+            @if (Model.Lines.Count == 0)
+            {
+                <p class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
+                    No fee categories found@(Model.ShowInstitute ? " for this institute" : "").
+                    <a asp-action="CategoryForm" class="font-medium text-brand-700 hover:underline">Create one first.</a>
+                </p>
+            }
+            else
+            {
+                <div class="divide-y divide-gray-100 rounded-lg border border-gray-200">
+                    @for (int i = 0; i < Model.Lines.Count; i++)
+                    {
+                        <label class="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50">
+                            <input type="hidden" asp-for="Lines[i].CategoryId" />
+                            <input type="hidden" asp-for="Lines[i].Name" />
+                            <input type="checkbox" asp-for="Lines[i].Include"
+                                   class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                            <span class="min-w-0 flex-1 text-sm font-medium text-gray-800">@Model.Lines[i].Name</span>
+                            <span class="text-sm text-gray-400">Rs.</span>
+                            <input type="number" min="0" step="1" asp-for="Lines[i].Amount"
+                                   class="w-32 rounded-lg border border-gray-300 bg-gray-50 p-2 text-sm text-gray-900 focus:border-brand-500 focus:ring-brand-500" />
+                        </label>
+                    }
+                </div>
+                <p class="mt-1 text-xs text-gray-500">Untick a row to exclude it; edit amounts as needed. One invoice is created per active student in the class.</p>
+            }
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700">Generate</button>
+            <a asp-action="Index" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

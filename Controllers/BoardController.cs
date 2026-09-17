@@ -1,28 +1,25 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Scholar.Models;
-using Scholar.Repositories;
+using Scholar.Services;
 
 namespace Scholar.Controllers
 {
     [Authorize]
     public class BoardController : Controller
     {
-        private readonly IRepository<Board> _boards;
+        private readonly IBoardService _boards;
+        private readonly ILogger<BoardController> _logger;
 
-        public BoardController(IRepository<Board> boards)
+        public BoardController(IBoardService boards, ILogger<BoardController> logger)
         {
             _boards = boards;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index()
         {
-            List<Board>? boards = await _boards.Query()
-                                               .OrderBy(b => b.Id)
-                                               .ToListAsync();
-
-            return View(boards);
+            _logger.LogDebug("Loading boards.");
+            return View(await _boards.GetBoardsAsync());
         }
     }
 }

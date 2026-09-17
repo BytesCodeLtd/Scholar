@@ -1,46 +1,36 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Scholar.Models;
-using Scholar.Repositories;
+using Scholar.Services;
 
 namespace Scholar.Controllers
 {
     [Authorize]
     public class ChapterController : Controller
     {
-        private readonly IRepository<Chapter> _chapterRepository;
-        private readonly IRepository<Institute> _institutes;
+        private readonly IChapterService _chapters;
+        private readonly ILogger<ChapterController> _logger;
 
-        public ChapterController(
-            IRepository<Chapter> chapterRepository,
-            IRepository<Institute> institutes)
+        public ChapterController(IChapterService chapters, ILogger<ChapterController> logger)
         {
-            _chapterRepository = chapterRepository;
-            _institutes = institutes;
+            _chapters = chapters;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index(int subjectId)
         {
-            List<Chapter> chapters = await _chapterRepository.Query()
-                                                             .Where(x => x.SubjectId == subjectId)
-                                                             .Include(c => c.Topics)
-                                                             .Include(c => c.Subject)
-                                                             .OrderBy(c => c.Number)
-                                                             .ToListAsync();
+            _logger.LogDebug("Loading chapters for subject {SubjectId}.", subjectId);
+            List<Chapter> chapters = await _chapters.GetChaptersAsync(subjectId);
 
             ViewBag.SubjectId = subjectId;
             ViewBag.GradeId = chapters.FirstOrDefault()?.Subject.GradeId ?? 0;
 
-            if (User.IsInRole(Constants.Roles.SuperAdmin))
+            if (_chapters.IsSuperAdmin)
             {
-                ViewBag.Institutes = await _institutes.Query()
-                                                      .AsNoTracking()
-                                                      .ToListAsync();
+                ViewBag.Institutes = await _chapters.GetInstitutesAsync();
             }
 
             return View(chapters);
         }
-
     }
 }

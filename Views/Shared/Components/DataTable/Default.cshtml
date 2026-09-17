@@ -93,7 +93,7 @@
     }
 }
 
-<div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col sm:flex-1 sm:min-h-0">
+<div data-table class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col sm:flex-1 sm:min-h-0">
     @if (!string.IsNullOrEmpty(Model.Title) || Model.ShowSearch || Model.Actions.Count > 0)
     {
         <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b bg-gray-50 border-gray-200">
@@ -109,7 +109,7 @@
             <div class="flex flex-wrap items-center gap-3 ms-auto">
                 @if (Model.ShowSearch)
                 {
-                    <form method="get" class="flex items-center gap-2">
+                    <form method="get" class="data-table-search flex items-center gap-2">
                         @* Preserve other query values (pageSize, orderBy, ...); reset page to 1. *@
                         @foreach (var kv in query)
                         {
@@ -118,12 +118,8 @@
                                 <input type="hidden" name="@kv.Key" value="@kv.Value" />
                             }
                         }
-                        <input type="search" name="search" value="@query["search"]" placeholder="Search…"
+                        <input type="text" name="search" value="@query["search"]" placeholder="Search…" autocomplete="off"
                                class="w-56 text-sm text-gray-700 border border-gray-300 rounded-lg p-2 focus:ring-brand-500 focus:border-brand-500" />
-                        <button type="submit"
-                                class="px-3 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700">
-                            Search
-                        </button>
                     </form>
                 }
 
@@ -180,7 +176,7 @@
                             {
                                 bool active = sortColumn == col.Property;
                                 string nextDir = active && sortDir == "asc" ? "desc" : "asc";
-                                <a href="@SortUrl(col.Property, nextDir)" class="inline-flex items-center hover:text-gray-900">
+                                <a href="@SortUrl(col.Property, nextDir)" class="data-table-nav inline-flex items-center hover:text-gray-900">
                                     @col.Header
                                     <svg class="w-3 h-3 ms-1.5 @(active ? "text-gray-700" : "text-gray-400")" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z" />
@@ -340,7 +336,7 @@
                 </span>
                 <label class="flex items-center gap-2 text-xs text-gray-500">
                     Rows
-                    <select onchange="location.href=this.value"
+                    <select data-table-size
                             class="w-16 text-sm text-gray-700 border border-gray-300 rounded-lg p-1.5 focus:ring-brand-500 focus:border-brand-500">
                         @foreach (var size in new[] { 10, 25, 50, 100 })
                         {
@@ -358,7 +354,7 @@
                             @if (Model.Page > 1)
                             {
                                 <a href="@PageUrl(Model.Page - 1)" aria-label="Previous"
-                                   class="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700">
+                                   class="data-table-nav flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700">
                                     <span class="sr-only">Previous</span>
                                     <svg class="w-2.5 h-2.5 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 1 1 5l4 4" />
@@ -388,7 +384,7 @@
                                 else
                                 {
                                     <a href="@PageUrl(p)"
-                                       class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700">@p</a>
+                                       class="data-table-nav flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700">@p</a>
                                 }
                             </li>
                         }
@@ -397,7 +393,7 @@
                             @if (Model.Page < Model.TotalPages)
                             {
                                 <a href="@PageUrl(Model.Page + 1)" aria-label="Next"
-                                   class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700">
+                                   class="data-table-nav flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700">
                                     <span class="sr-only">Next</span>
                                     <svg class="w-2.5 h-2.5 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
                                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4" />
@@ -435,3 +431,47 @@
         }
     </script>
 }
+
+<script>
+    // Swap the table fragment in place for search/sort/paging instead of reloading.
+    (function () {
+        if (window.dataTableAjax) return;
+        window.dataTableAjax = true;
+
+        const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+        const searchUrl = f => f.action.split('?')[0] + '?' + new URLSearchParams(new FormData(f));
+
+        async function load(url) {
+            const old = document.querySelector('.data-table-search input');
+            const restore = old === document.activeElement ? { value: old.value, pos: old.selectionStart } : null;
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+            document.querySelector('[data-table]').replaceWith(doc.querySelector('[data-table]'));
+            history.pushState(null, '', url);
+            window.initFlowbite?.();
+            if (restore) {
+                const i = document.querySelector('.data-table-search input');
+                if (i) { i.value = restore.value; i.focus(); const p = restore.pos ?? i.value.length; i.setSelectionRange(p, p); }
+            }
+        }
+
+        addEventListener('click', e => {
+            const el = e.target.closest('.data-table-nav');
+            if (el) { e.preventDefault(); load(el.href); }
+        });
+        // Search runs automatically on input; just stop Enter from doing a full-page reload.
+        addEventListener('submit', e => {
+            if (e.target.closest('.data-table-search')) e.preventDefault();
+        });
+        addEventListener('input', debounce(e => {
+            const i = e.target.closest('.data-table-search input');
+            if (i) load(searchUrl(i.form));
+        }, 700));
+        addEventListener('change', e => {
+            const s = e.target.closest('[data-table-size]');
+            if (s) load(s.value);
+        });
+        addEventListener('popstate', () => load(location.href));
+    })();
+</script>

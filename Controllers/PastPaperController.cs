@@ -1,92 +1,51 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Scholar.Common.Storage;
 using Scholar.Constants;
 using Scholar.Models;
 using Scholar.Models.ViewModels;
-using Scholar.Repositories;
+using Scholar.Services;
 
 namespace Scholar.Controllers
 {
     [Authorize(Roles = Roles.SuperAdmin + "," + Roles.InstituteAdmin)]
     public class PastPaperController : Controller
     {
-        private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
+        private readonly IPastPaperService _pastPapers;
+        private readonly ILogger<PastPaperController> _logger;
 
-        private readonly IRepository<PastPaper> _pastPapers;
-        private readonly IRepository<Board> _boards;
-        private readonly IRepository<Grade> _grades;
-        private readonly IRepository<Subject> _subjects;
-        private readonly IFileStorage _fileStorage;
-
-        public PastPaperController(
-            IRepository<PastPaper> pastPapers,
-            IRepository<Board> boards,
-            IRepository<Grade> grades,
-            IRepository<Subject> subjects,
-            IFileStorage fileStorage)
+        public PastPaperController(IPastPaperService pastPapers, ILogger<PastPaperController> logger)
         {
             _pastPapers = pastPapers;
-            _boards = boards;
-            _grades = grades;
-            _subjects = subjects;
-            _fileStorage = fileStorage;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            List<Board> boards = await _boards.Query().AsNoTracking().OrderBy(b => b.Name).ToListAsync();
-
+            List<Board> boards = await _pastPapers.GetBoardsAsync();
             return View(boards);
         }
 
         // Cascading dropdown feeds.
         [HttpGet]
         public async Task<IActionResult> Grades(int boardId)
-        {
-            // Grades are global; only surface those with subjects for the chosen board.
-            var grades = await _grades.Query()
-                                      .AsNoTracking()
-                                      .Where(g => g.Subjects.Any(s => s.BoardId == boardId))
-                                      .OrderBy(g => g.Id)
-                                      .Select(g => new { g.Id, g.Name })
-                                      .ToListAsync();
-            return Json(grades);
-        }
+            => Json(await _pastPapers.GetGradesForBoardAsync(boardId));
 
         [HttpGet]
         public async Task<IActionResult> Subjects(int boardId, int gradeId)
-        {
-            var subjects = await _subjects.Query()
-                                          .AsNoTracking()
-                                          .Where(s => s.BoardId == boardId && s.GradeId == gradeId)
-                                          .OrderBy(s => s.Name)
-                                          .Select(s => new { s.Id, s.Name })
-                                          .ToListAsync();
-            return Json(subjects);
-        }
+            => Json(await _pastPapers.GetSubjectsAsync(boardId, gradeId));
 
         [HttpGet]
         public async Task<IActionResult> List(int subjectId)
         {
-            List<PastPaper> papers = await _pastPapers.Query()
-                                                      .AsNoTracking()
-                                                      .Where(p => p.IsActive && p.SubjectId == subjectId)
-                                                      .OrderByDescending(p => p.Year)
-                                                      .ThenBy(p => p.Title)
-                                                      .ToListAsync();
-
+            List<PastPaper> papers = await _pastPapers.GetPapersForSubjectAsync(subjectId);
             return PartialView("_PastPaperList", papers);
         }
 
         [HttpGet]
         [Authorize(Roles = Roles.SuperAdmin)]
         public async Task<IActionResult> Manage()
-        {
-            return View(await BuildManageViewModelAsync(new UploadPastPaperViewModel()));
-        }
+            => View(await _pastPapers.BuildManageViewModelAsync(new UploadPastPaperViewModel()));
 
         [HttpPost]
         [Authorize(Roles = Roles.SuperAdmin)]
@@ -95,67 +54,27 @@ namespace Scholar.Controllers
         {
             ValidateFile(model.File);
 
-            bool subjectExists = model.SubjectId > 0 && await _subjects.Query().AnyAsync(s => s.Id == model.SubjectId);
-            if (!subjectExists)
+            if (!await _pastPapers.SubjectExistsAsync(model.SubjectId))
             {
-                ModelState.AddModelError($"Upload.{nameof(model.SubjectId)}", "Select a valid subject.");
+                ModelState.AddModelError($"{nameof(ManagePastPapersViewModel.Upload)}.{nameof(model.SubjectId)}", "Select a valid subject.");
             }
 
             if (!ModelState.IsValid)
             {
-                return View(nameof(Manage), await BuildManageViewModelAsync(model));
+                return View(nameof(Manage), await _pastPapers.BuildManageViewModelAsync(model));
             }
 
-            string fileUrl = await _fileStorage.UploadAsync(model.File!, "past-papers");
+            string title = await _pastPapers.SaveUploadAsync(model);
 
-            PastPaper paper = new()
-            {
-                SubjectId = model.SubjectId,
-                Title = model.Title.Trim(),
-                Year = model.Year,
-                FileUrl = fileUrl,
-                OriginalFileName = Path.GetFileName(model.File!.FileName)
-            };
-
-            await _pastPapers.AddAsync(paper);
-            await _pastPapers.SaveChangesAsync();
-
-            TempData["Success"] = $"Past paper \"{paper.Title}\" uploaded.";
+            _logger.LogInformation("Past paper \"{Title}\" uploaded for subject {SubjectId}.", title, model.SubjectId);
+            TempData["Success"] = $"Past paper \"{title}\" uploaded.";
             return RedirectToAction(nameof(Manage));
         }
 
-        [HttpPost]
-        [Authorize(Roles = Roles.SuperAdmin)]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
-        {
-            PastPaper? paper = await _pastPapers.GetByIdAsync(id);
-            if (paper is null)
-            {
-                return NotFound();
-            }
-
-            await _fileStorage.DeleteAsync(paper.FileUrl);
-            _pastPapers.Remove(paper);
-            await _pastPapers.SaveChangesAsync();
-
-            TempData["Success"] = "Past paper deleted.";
-            return RedirectToAction(nameof(Manage));
-        }
-
-        private async Task<ManagePastPapersViewModel> BuildManageViewModelAsync(UploadPastPaperViewModel upload)
-        {
-            List<Board> boards = await _boards.Query().AsNoTracking().OrderBy(b => b.Name).ToListAsync();
-
-            return new ManagePastPapersViewModel
-            {
-                Boards = boards,
-                Upload = upload
-            };
-        }
-
+        // Validate the uploaded PDF (presence, type, size) straight onto ModelState.
         private void ValidateFile(IFormFile? file)
         {
+            const long maxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
             string key = $"{nameof(ManagePastPapersViewModel.Upload)}.{nameof(UploadPastPaperViewModel.File)}";
 
             if (file is null || file.Length == 0)
@@ -169,10 +88,27 @@ namespace Scholar.Controllers
                 ModelState.AddModelError(key, Message.PastPaperInvalidType);
             }
 
-            if (file.Length > MaxFileSizeBytes)
+            if (file.Length > maxFileSizeBytes)
             {
                 ModelState.AddModelError(key, Message.PastPaperTooLarge);
             }
+        }
+
+        [HttpPost]
+        [Authorize(Roles = Roles.SuperAdmin)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            bool deleted = await _pastPapers.DeleteAsync(id);
+            if (!deleted)
+            {
+                _logger.LogWarning("Delete failed: past paper {Id} not found.", id);
+                return NotFound();
+            }
+
+            _logger.LogInformation("Past paper {Id} deleted.", id);
+            TempData["Success"] = "Past paper deleted.";
+            return RedirectToAction(nameof(Manage));
         }
     }
 }

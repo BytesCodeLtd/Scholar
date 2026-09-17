@@ -77,6 +77,16 @@ namespace Scholar.Common.Tables
             Delete(ControllerNames.Teacher)
         ];
 
+        public static RowMenuItem[] Section() =>
+        [
+            Edit(ControllerNames.Section)
+        ];
+
+        public static RowMenuItem[] Class() =>
+        [
+            Edit(ControllerNames.Class)
+        ];
+
         public static RowMenuItem[] Attendance(string date, int gradeId, string? section, int? instituteId, int page)
         {
             return

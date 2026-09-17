@@ -1,14 +1,20 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Scholar.Common.Identity;
 using Scholar.Models;
 
 namespace Scholar.Data
 {
     public class ScholarDbContext : IdentityDbContext<ApplicationUser>
     {
-        public ScholarDbContext(DbContextOptions<ScholarDbContext> options)
+        private readonly int? _tenantId;
+        private readonly bool _bypassTenantFilter;
+
+        public ScholarDbContext(DbContextOptions<ScholarDbContext> options, ITenantProvider? tenant = null)
             : base(options)
         {
+            _tenantId = tenant?.InstituteId;
+            _bypassTenantFilter = tenant?.BypassFilter ?? true;
         }
 
         public DbSet<Institute> Institutes => Set<Institute>();
@@ -24,9 +30,15 @@ namespace Scholar.Data
         public DbSet<Teacher> Teacher => Set<Teacher>();
         public DbSet<Student> Students => Set<Student>();
         public DbSet<Attendance> Attendances => Set<Attendance>();
+        public DbSet<Section> Sections => Set<Section>();
+        public DbSet<InstituteClass> Classes => Set<InstituteClass>();
         public DbSet<TestSettings> TestSettings => Set<TestSettings>();
         public DbSet<PastPaper> PastPapers => Set<PastPaper>();
         public DbSet<TestSection> TestSections => Set<TestSection>();
+        public DbSet<FeeCategory> FeeCategories => Set<FeeCategory>();
+        public DbSet<Invoice> Invoices => Set<Invoice>();
+        public DbSet<InvoiceItem> InvoiceItems => Set<InvoiceItem>();
+        public DbSet<Payment> Payments => Set<Payment>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -65,6 +77,10 @@ namespace Scholar.Data
                 .HasForeignKey(s => s.GradeId).OnDelete(DeleteBehavior.NoAction);
             builder.Entity<Student>()
                 .Property(s => s.Gender).HasConversion<string>().HasMaxLength(20);
+            builder.Entity<Student>()
+                .Property(s => s.GuardianType).HasConversion<string>().HasMaxLength(20);
+            builder.Entity<Student>()
+                .Property(s => s.AdmissionDiscount).HasPrecision(18, 2);
             builder.Entity<Student>()
                 .HasIndex(s => s.InstituteId);
 
@@ -170,6 +186,68 @@ namespace Scholar.Data
                 .HasOne(tq => tq.Question).WithMany()
                 .HasForeignKey(tq => tq.QuestionId).OnDelete(DeleteBehavior.Restrict);
 
+            // Sections are institute-owned; removed with their institute.
+            builder.Entity<Section>()
+                .HasOne(s => s.Institute).WithMany()
+                .HasForeignKey(s => s.InstituteId).OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<Section>()
+                .HasIndex(s => s.InstituteId);
+            builder.Entity<Section>()
+                .Property(s => s.Name).IsRequired().HasMaxLength(50);
+
+            // Classes are institute-owned and belong to a section. Institute link
+            // cascades; the section link is Restrict to avoid a second cascade path.
+            // Stored in the singular "Class" table.
+            builder.Entity<InstituteClass>().ToTable("Class");
+            builder.Entity<InstituteClass>()
+                .HasOne(c => c.Institute).WithMany()
+                .HasForeignKey(c => c.InstituteId).OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<InstituteClass>()
+                .HasOne(c => c.Section).WithMany()
+                .HasForeignKey(c => c.SectionId).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<InstituteClass>()
+                .HasIndex(c => c.InstituteId);
+            builder.Entity<InstituteClass>()
+                .Property(c => c.Name).IsRequired().HasMaxLength(50);
+
+            builder.Entity<FeeCategory>()
+                .HasOne(c => c.Institute).WithMany()
+                .HasForeignKey(c => c.InstituteId).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<FeeCategory>()
+                .HasIndex(c => c.InstituteId);
+            builder.Entity<FeeCategory>()
+                .Property(c => c.DefaultAmount).HasPrecision(18, 2);
+
+            // Invoices belong to an institute; a student's invoices are removed with the
+            // institute. Student link is Restrict to avoid a second cascade path.
+            builder.Entity<Invoice>()
+                .HasOne(i => i.Institute).WithMany()
+                .HasForeignKey(i => i.InstituteId).OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<Invoice>()
+                .HasOne(i => i.Student).WithMany()
+                .HasForeignKey(i => i.StudentId).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<Invoice>()
+                .HasIndex(i => new { i.InstituteId, i.Status });
+            builder.Entity<Invoice>()
+                .HasIndex(i => i.StudentId);
+
+            // Items cascade with their invoice; keep item history if a category is removed.
+            builder.Entity<InvoiceItem>()
+                .HasOne(it => it.Invoice).WithMany(i => i.Items)
+                .HasForeignKey(it => it.InvoiceId).OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<InvoiceItem>()
+                .HasOne(it => it.FeeCategory).WithMany()
+                .HasForeignKey(it => it.FeeCategoryId).OnDelete(DeleteBehavior.SetNull);
+            builder.Entity<InvoiceItem>()
+                .Property(it => it.Amount).HasPrecision(18, 2);
+
+            // Payments cascade with their invoice.
+            builder.Entity<Payment>()
+                .HasOne(p => p.Invoice).WithMany(i => i.Payments)
+                .HasForeignKey(p => p.InvoiceId).OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<Payment>()
+                .Property(p => p.Amount).HasPrecision(18, 2);
+
             // Give audit columns a DB default so direct SQL inserts (e.g. the seed
             // script) don't have to supply them. EF still stamps its own values on save.
             foreach (var entityType in builder.Model.GetEntityTypes())
@@ -186,6 +264,60 @@ namespace Scholar.Data
                 builder.Entity(entityType.ClrType)
                     .Property(nameof(IAuditableEntity.IsActive))
                     .HasDefaultValue(true);
+            }
+
+            ApplyTenantFilter<Student>(builder);
+            ApplyTenantFilter<Attendance>(builder);
+            ApplyTenantFilter<Section>(builder);
+            ApplyTenantFilter<InstituteClass>(builder);
+            ApplyTenantFilter<Test>(builder);
+            ApplyTenantFilter<TestSettings>(builder);
+            ApplyTenantFilter<FeeCategory>(builder);
+            ApplyTenantFilter<Invoice>(builder);
+
+            // Invoice children have no InstituteId of their own; scope them through
+            // their parent invoice so their filters stay consistent with Invoice's.
+            builder.Entity<InvoiceItem>()
+                .HasQueryFilter(it => _bypassTenantFilter || it.Invoice.InstituteId == _tenantId);
+            builder.Entity<Payment>()
+                .HasQueryFilter(p => _bypassTenantFilter || p.Invoice.InstituteId == _tenantId);
+        }
+
+        /// <summary>Applies the standard tenant query filter to an institute-owned entity.</summary>
+        private void ApplyTenantFilter<T>(ModelBuilder builder) where T : class, ITenantEntity
+            => builder.Entity<T>()
+                .HasQueryFilter(e => _bypassTenantFilter || e.InstituteId == _tenantId);
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            StampTenant();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            StampTenant();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        /// <summary>
+        /// Stamps the current institute onto new tenant entities that don't already
+        /// carry one, so inserts can't silently land in the wrong (or no) tenant.
+        /// Super-admin/no-request contexts must set InstituteId explicitly.
+        /// </summary>
+        private void StampTenant()
+        {
+            if (_bypassTenantFilter || _tenantId is not int tenantId)
+            {
+                return;
+            }
+
+            foreach (var entry in ChangeTracker.Entries<ITenantEntity>())
+            {
+                if (entry.State == EntityState.Added && entry.Entity.InstituteId == 0)
+                {
+                    entry.Entity.InstituteId = tenantId;
+                }
             }
         }
     }

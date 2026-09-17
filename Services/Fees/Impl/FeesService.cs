@@ -17,7 +17,7 @@ namespace Scholar.Services
         private readonly IRepository<FeeCategory> _categories;
         private readonly IRepository<Invoice> _invoices;
         private readonly IRepository<Student> _students;
-        private readonly IRepository<Grade> _grades;
+        private readonly IRepository<InstituteClass> _classes;
         private readonly IRepository<Institute> _institutes;
         private readonly ScholarDbContext _db;
         private readonly IEmailSender _emailSender;
@@ -29,7 +29,7 @@ namespace Scholar.Services
             IRepository<FeeCategory> categories,
             IRepository<Invoice> invoices,
             IRepository<Student> students,
-            IRepository<Grade> grades,
+            IRepository<InstituteClass> classes,
             IRepository<Institute> institutes,
             ScholarDbContext db,
             IEmailSender emailSender,
@@ -40,7 +40,7 @@ namespace Scholar.Services
             _categories = categories;
             _invoices = invoices;
             _students = students;
-            _grades = grades;
+            _classes = classes;
             _institutes = institutes;
             _db = db;
             _emailSender = emailSender;
@@ -72,14 +72,14 @@ namespace Scholar.Services
                 invoices = invoices.Where(i =>
                     i.Student.FullName.Contains(term) ||
                     i.Period.Contains(term) ||
-                    i.Student.Grade.Name.Contains(term));
+                    (i.Student.Class != null && i.Student.Class.Name.Contains(term)));
             }
 
             var projected = invoices.Select(i => new
             {
                 i.Id,
                 Student = i.Student.FullName,
-                Class = i.Student.Grade.Name,
+                Class = i.Student.Class != null ? i.Student.Class.Name : null,
                 i.Period,
                 i.DueDate,
                 Total = i.Items.Sum(x => (decimal?)x.Amount) ?? 0m,
@@ -102,7 +102,7 @@ namespace Scholar.Services
             {
                 Id = i.Id,
                 Student = i.Student,
-                Class = i.Class,
+                Class = i.Class ?? string.Empty,
                 Period = i.Period,
                 DueDate = i.DueDate.ToString("dd MMM yyyy"),
                 Total = Common.Money.Pkr(i.Total),
@@ -125,7 +125,7 @@ namespace Scholar.Services
         public async Task<InvoiceDetailsViewModel?> GetInvoiceDetailsAsync(int id)
         {
             Invoice? invoice = await _invoices.Query()
-                .Include(i => i.Student).ThenInclude(s => s.Grade)
+                .Include(i => i.Student).ThenInclude(s => s.Class)
                 .Include(i => i.Institute)
                 .Include(i => i.Items)
                 .Include(i => i.Payments)
@@ -141,7 +141,7 @@ namespace Scholar.Services
                 Id = invoice.Id,
                 StudentName = invoice.Student.FullName,
                 RollNumber = invoice.Student.RollNumber,
-                Class = invoice.Student.Grade.Name,
+                Class = invoice.Student.Class?.Name ?? string.Empty,
                 Section = invoice.Student.Section,
                 Institute = invoice.Institute.Name,
                 Period = invoice.Period,
@@ -252,7 +252,7 @@ namespace Scholar.Services
             List<GenerateLineViewModel> selected = model.Lines.Where(l => l.Include && l.Amount > 0).ToList();
 
             // Students in the chosen class (and section, if given) at this institute.
-            IQueryable<Student> studentsQuery = _students.Query().Where(s => s.IsActive && s.InstituteId == targetInstitute && s.GradeId == model.GradeId);
+            IQueryable<Student> studentsQuery = _students.Query().Where(s => s.IsActive && s.InstituteId == targetInstitute && s.ClassId == model.GradeId);
 
             if (!string.IsNullOrWhiteSpace(model.Section))
             {
@@ -451,11 +451,11 @@ namespace Scholar.Services
                 model.InstituteOptions = await InstituteOptionsAsync();
             }
 
-            model.GradeOptions = await _grades.Query()
-                                              .Where(g => g.IsActive)
-                                              .OrderBy(g => g.Name)
-                                              .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.Name })
-                                              .ToListAsync();
+            model.GradeOptions = await _classes.Query()
+                                               .Where(c => c.IsActive)
+                                               .OrderBy(c => c.Name)
+                                               .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name })
+                                               .ToListAsync();
 
             int? instituteId = _tenant.IsSuperAdmin ? model.InstituteId : _tenant.InstituteId;
 

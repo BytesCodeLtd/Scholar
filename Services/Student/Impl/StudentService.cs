@@ -14,14 +14,14 @@ namespace Scholar.Services
 {
     public class StudentService(
         IRepository<Student> students,
-        IRepository<Grade> grades,
+        IRepository<InstituteClass> classes,
         IRepository<Institute> institutes,
         IRepository<Attendance> attendance,
         IFileStorage fileStorage,
         ITenantProvider tenant) : IStudentService
     {
         private readonly IRepository<Student> _students = students;
-        private readonly IRepository<Grade> _grades = grades;
+        private readonly IRepository<InstituteClass> _classes = classes;
         private readonly IRepository<Institute> _institutes = institutes;
         private readonly IRepository<Attendance> _attendance = attendance;
         private readonly IFileStorage _fileStorage = fileStorage;
@@ -39,7 +39,7 @@ namespace Scholar.Services
                 students = students.Where(s =>
                     s.FullName.Contains(term) ||
                     (s.RollNumber != null && s.RollNumber.Contains(term)) ||
-                    s.Grade.Name.Contains(term) ||
+                    (s.Class != null && s.Class.Name.Contains(term)) ||
                     (s.Section != null && s.Section.Contains(term)));
             }
 
@@ -48,7 +48,7 @@ namespace Scholar.Services
                 Id = s.Id,
                 Name = s.FullName,
                 RollNumber = s.RollNumber,
-                Class = s.Grade.Name,
+                Class = s.Class != null ? s.Class.Name : null,
                 Section = s.Section,
                 Guardian = s.GuardianName,
                 Phone = s.PhoneNumber,
@@ -77,7 +77,7 @@ namespace Scholar.Services
                     Id = s.Id,
                     FullName = s.FullName,
                     RollNumber = s.RollNumber,
-                    Class = s.Grade.Name,
+                    Class = s.Class != null ? s.Class.Name : string.Empty,
                     Section = s.Section,
                     Gender = s.Gender,
                     DateOfBirth = s.DateOfBirth,
@@ -131,7 +131,7 @@ namespace Scholar.Services
         public async Task<bool> CreateAsync(CreateStudentViewModel model)
         {
             int? instituteId = ResolveInstitute(model.InstituteId);
-            if (instituteId is null)
+            if (instituteId is null || !await ClassBelongsToInstituteAsync(model.GradeId, instituteId.Value))
             {
                 return false;
             }
@@ -139,7 +139,7 @@ namespace Scholar.Services
             Student student = new()
             {
                 InstituteId = instituteId.Value,
-                GradeId = model.GradeId,
+                ClassId = model.GradeId,
                 FullName = model.FullName.Trim(),
                 RollNumber = model.RollNumber?.Trim(),
                 Section = model.Section?.Trim(),
@@ -157,7 +157,7 @@ namespace Scholar.Services
 
         public async Task PopulateRegisterOptionsAsync(RegisterStudentViewModel model)
         {
-            model.GradeOptions = await GradeOptionsAsync();
+            model.ClassOptions = await ClassOptionsWithSectionsAsync();
             model.ShowInstitute = _tenant.IsSuperAdmin;
 
             if (_tenant.IsSuperAdmin)
@@ -179,7 +179,7 @@ namespace Scholar.Services
         public async Task<bool> RegisterAsync(RegisterStudentViewModel model)
         {
             int? instituteId = ResolveInstitute(model.InstituteId);
-            if (instituteId is null)
+            if (instituteId is null || !await ClassBelongsToInstituteAsync(model.GradeId, instituteId.Value))
             {
                 return false;
             }
@@ -191,7 +191,7 @@ namespace Scholar.Services
             Student student = new()
             {
                 InstituteId = instituteId.Value,
-                GradeId = model.GradeId,
+                ClassId = model.GradeId,
                 AdmissionNumber = model.AdmissionNumber?.Trim(),
                 AdmissionSession = model.AdmissionSession?.Trim(),
                 AdmissionDate = model.AdmissionDate,
@@ -258,10 +258,6 @@ namespace Scholar.Services
 
         public Task<bool> ActivateAsync(int id) => SetActiveAsync(id, active: true);
 
-        /// <summary>
-        /// Resolves which institute a new student belongs to: a super admin picks it,
-        /// an institute admin is fixed to their own. Null when it can't be determined.
-        /// </summary>
         private int? ResolveInstitute(int? pickedBySuperAdmin)
             => _tenant.IsSuperAdmin ? pickedBySuperAdmin : _tenant.InstituteId;
 
@@ -279,11 +275,26 @@ namespace Scholar.Services
             => file is { Length: > 0 } ? await _fileStorage.UploadAsync(file, "students") : null;
 
         private async Task<List<SelectListItem>> GradeOptionsAsync()
-            => await _grades.Query()
-                            .Where(g => g.IsActive)
-                            .OrderBy(g => g.Name)
-                            .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.Name })
-                            .ToListAsync();
+            => await _classes.Query()
+                             .Where(c => c.IsActive)
+                             .OrderBy(c => c.Name)
+                             .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name })
+                             .ToListAsync();
+
+        private Task<bool> ClassBelongsToInstituteAsync(int classId, int instituteId)
+            => _classes.Query().AnyAsync(c => c.Id == classId && c.InstituteId == instituteId && c.IsActive);
+
+        private async Task<List<StudentClassOption>> ClassOptionsWithSectionsAsync()
+            => await _classes.Query()
+                             .Where(c => c.IsActive)
+                             .OrderBy(c => c.Name)
+                             .Select(c => new StudentClassOption
+                             {
+                                 Id = c.Id,
+                                 Name = c.Name,
+                                 Sections = c.Sections.OrderBy(s => s.Name).Select(s => s.Name).ToList()
+                             })
+                             .ToListAsync();
 
         private async Task<List<SelectListItem>> InstituteOptionsAsync()
             => await _institutes.Query()

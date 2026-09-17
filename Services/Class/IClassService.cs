@@ -9,7 +9,7 @@ namespace Scholar.Services
 
         Task<ClassFormViewModel?> GetFormAsync(int? id);
 
-        Task<bool> CreateOrUpdate(int? id, string name, int? sectionId);
+        Task<bool> CreateOrUpdate(int? id, string name, int[] sectionIds);
 
         Task<bool> DeleteAsync(int id);
     }

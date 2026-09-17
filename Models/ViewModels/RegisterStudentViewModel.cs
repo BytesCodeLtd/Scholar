@@ -190,17 +190,23 @@ namespace Scholar.Models.ViewModels
         public string? TermsAndConditions { get; set; }
 
         // --- Form context ----------------------------------------------------
-        /// <summary>Only shown for a SuperAdmin, who must pick the academy/institute.</summary>
         public bool ShowInstitute { get; set; }
 
-        /// <summary>Shown as a hint under the admission number, e.g. "Last Admission # 1725".</summary>
         public string? LastAdmissionNumber { get; set; }
 
-        /// <summary>Shown as a hint under the roll number.</summary>
         public string? LastRollNumber { get; set; }
 
-        public IEnumerable<SelectListItem> GradeOptions { get; set; } = new List<SelectListItem>();
+        public IReadOnlyList<StudentClassOption> ClassOptions { get; set; } = [];
 
         public IEnumerable<SelectListItem> InstituteOptions { get; set; } = new List<SelectListItem>();
+    }
+
+    public class StudentClassOption
+    {
+        public int Id { get; set; }
+
+        public string Name { get; set; } = string.Empty;
+
+        public List<string> Sections { get; set; } = [];
     }
 }

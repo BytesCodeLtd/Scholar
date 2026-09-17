@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Scholar.Data;
 
@@ -11,9 +12,11 @@ using Scholar.Data;
 namespace Scholar.Migrations
 {
     [DbContext(typeof(ScholarDbContext))]
-    partial class ScholarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917195718_MakeClassSectionsManyToMany")]
+    partial class MakeClassSectionsManyToMany
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -934,9 +937,6 @@ namespace Scholar.Migrations
                     b.Property<string>("Category")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("ClassId")
-                        .HasColumnType("int");
-
                     b.Property<string>("ConcessionType")
                         .HasColumnType("nvarchar(max)");
 
@@ -982,6 +982,9 @@ namespace Scholar.Migrations
                     b.Property<string>("Gender")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("GradeId")
+                        .HasColumnType("int");
 
                     b.Property<string>("GuardianAddress")
                         .HasColumnType("nvarchar(max)");
@@ -1083,7 +1086,7 @@ namespace Scholar.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ClassId");
+                    b.HasIndex("GradeId");
 
                     b.HasIndex("InstituteId");
 
@@ -1801,10 +1804,11 @@ namespace Scholar.Migrations
 
             modelBuilder.Entity("Scholar.Models.Student", b =>
                 {
-                    b.HasOne("Scholar.Models.InstituteClass", "Class")
+                    b.HasOne("Scholar.Models.Grade", "Grade")
                         .WithMany()
-                        .HasForeignKey("ClassId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .HasForeignKey("GradeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
 
                     b.HasOne("Scholar.Models.Institute", "Institute")
                         .WithMany()
@@ -1812,7 +1816,7 @@ namespace Scholar.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Class");
+                    b.Navigation("Grade");
 
                     b.Navigation("Institute");
                 });

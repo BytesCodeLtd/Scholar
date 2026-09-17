@@ -2,17 +2,30 @@
     function wire(form) {
         const instSelect = form.querySelector('[data-sg-institute]');
         const classSelect = form.querySelector('[data-sg-class]');
-        const items = form.querySelectorAll('[data-sg-item]');
+        const sectionItems = form.querySelectorAll('[data-sg-section]');
+        const subjectItems = form.querySelectorAll('[data-sg-subject]');
 
-        // No institute picker (institute admin): show everything, nothing to filter.
-        if (!instSelect) return;
+        function setVisible(el, visible) {
+            el.style.display = visible ? '' : 'none';
+            if (!visible) {
+                const cb = el.querySelector('input[type="checkbox"]');
+                if (cb) cb.checked = false;
+            }
+        }
 
-        function refresh() {
+        function refreshSections() {
+            const opt = classSelect ? classSelect.selectedOptions[0] : null;
+            const ids = (opt && opt.dataset.sections) ? opt.dataset.sections.split(',') : [];
+            sectionItems.forEach(el => setVisible(el, ids.indexOf(el.dataset.sectionId) !== -1));
+        }
+
+        function refreshInstitute() {
+            if (!instSelect) return;
             const inst = instSelect.value;
 
             if (classSelect) {
                 Array.from(classSelect.options).forEach(opt => {
-                    if (!opt.value) return; // keep the placeholder
+                    if (!opt.value) return; // keep placeholder
                     const match = opt.dataset.institute === inst;
                     opt.hidden = !match;
                     opt.disabled = !match;
@@ -23,18 +36,19 @@
                 }
             }
 
-            items.forEach(el => {
-                const match = el.dataset.institute === inst;
-                el.style.display = match ? '' : 'none';
-                if (!match) {
-                    const cb = el.querySelector('input[type="checkbox"]');
-                    if (cb) cb.checked = false;
-                }
-            });
+            subjectItems.forEach(el => setVisible(el, el.dataset.institute === inst));
         }
 
-        instSelect.addEventListener('change', refresh);
-        refresh();
+        if (instSelect) {
+            // Changing institute can reset the class, so refresh sections afterwards too.
+            instSelect.addEventListener('change', () => { refreshInstitute(); refreshSections(); });
+        }
+        if (classSelect) {
+            classSelect.addEventListener('change', refreshSections);
+        }
+
+        refreshInstitute();
+        refreshSections();
     }
 
     document.querySelectorAll('[data-sg-form]').forEach(wire);

@@ -31,7 +31,7 @@ namespace Scholar.Services
             {
                 string term = tableParams.Search;
                 query = query.Where(c => c.Name.Contains(term)
-                                      || c.Section.Name.Contains(term)
+                                      || c.Sections.Any(s => s.Name.Contains(term))
                                       || c.Institute.Name.Contains(term));
             }
 
@@ -39,7 +39,7 @@ namespace Scholar.Services
             {
                 Id = c.Id,
                 Name = c.Name,
-                SectionName = c.Section.Name,
+                Sections = c.Sections.OrderBy(s => s.Name).Select(s => s.Name).ToList(),
                 InstituteName = c.Institute.Name,
                 IsActive = c.IsActive
             });
@@ -68,7 +68,9 @@ namespace Scholar.Services
 
             if (id is int classId)
             {
-                InstituteClass? cls = await _classes.Query().FirstOrDefaultAsync(c => c.Id == classId && c.IsActive);
+                InstituteClass? cls = await _classes.Query()
+                                                    .Include(c => c.Sections)
+                                                    .FirstOrDefaultAsync(c => c.Id == classId && c.IsActive);
 
                 if (cls is null)
                 {
@@ -77,29 +79,36 @@ namespace Scholar.Services
 
                 model.Id = cls.Id;
                 model.Name = cls.Name;
-                model.SectionId = cls.SectionId;
+                model.SelectedSectionIds = cls.Sections.Select(s => s.Id).ToHashSet();
             }
 
             return model;
         }
 
-        public async Task<bool> CreateOrUpdate(int? id, string name, int? sectionId)
+        public async Task<bool> CreateOrUpdate(int? id, string name, int[] sectionIds)
         {
-            if (string.IsNullOrWhiteSpace(name) || sectionId is null)
+            if (string.IsNullOrWhiteSpace(name) || sectionIds is null || sectionIds.Length == 0)
             {
                 return false;
             }
 
-            Section? section = await _sections.Query().FirstOrDefaultAsync(s => s.Id == sectionId && s.IsActive);
+            List<Section> selected = await _sections.Query()
+                                                    .Where(s => sectionIds.Contains(s.Id) && s.IsActive)
+                                                    .ToListAsync();
 
-            if (section is null)
+            // All chosen sections must belong to a single institute (which becomes the class's).
+            if (selected.Count == 0 || selected.Select(s => s.InstituteId).Distinct().Count() != 1)
             {
                 return false;
             }
+
+            int instituteId = selected[0].InstituteId;
 
             if (id is int classId)
             {
-                InstituteClass? cls = await _classes.Query().FirstOrDefaultAsync(c => c.Id == classId && c.IsActive);
+                InstituteClass? cls = await _classes.Query()
+                                                    .Include(c => c.Sections)
+                                                    .FirstOrDefaultAsync(c => c.Id == classId && c.IsActive);
 
                 if (cls is null)
                 {
@@ -107,21 +116,24 @@ namespace Scholar.Services
                 }
 
                 cls.Name = name.Trim();
-                cls.SectionId = section.Id;
-                cls.InstituteId = section.InstituteId;
+                cls.InstituteId = instituteId;
 
-                _classes.Update(cls);
+                cls.Sections.Clear();
+                foreach (Section s in selected) cls.Sections.Add(s);
+
                 await _classes.SaveChangesAsync();
                 return true;
             }
 
-            await _classes.AddAsync(new InstituteClass
+            InstituteClass created = new()
             {
                 Name = name.Trim(),
-                SectionId = section.Id,
-                InstituteId = section.InstituteId
-            });
+                InstituteId = instituteId
+            };
 
+            foreach (Section s in selected) created.Sections.Add(s);
+
+            await _classes.AddAsync(created);
             await _classes.SaveChangesAsync();
             return true;
         }

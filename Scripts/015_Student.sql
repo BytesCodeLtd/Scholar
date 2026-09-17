@@ -6,7 +6,7 @@ BEGIN
     (
         Id           INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Students PRIMARY KEY,
         InstituteId  INT               NOT NULL,
-        GradeId      INT               NOT NULL,
+        ClassId      INT               NULL,
         FullName     NVARCHAR(200)     NOT NULL,
         RollNumber   NVARCHAR(50)      NULL,
         Section      NVARCHAR(50)      NULL,
@@ -18,12 +18,12 @@ BEGIN
         UpdatedAt    DATETIME2         NOT NULL CONSTRAINT DF_Students_UpdatedAt DEFAULT (SYSUTCDATETIME()),
         IsActive     BIT               NOT NULL CONSTRAINT DF_Students_IsActive  DEFAULT (1),
         CONSTRAINT FK_Students_Institutes_InstituteId FOREIGN KEY (InstituteId)
-            REFERENCES dbo.Institutes (Id) ON DELETE CASCADE,
-        CONSTRAINT FK_Students_Grades_GradeId FOREIGN KEY (GradeId)
-            REFERENCES dbo.Grades (Id) ON DELETE NO ACTION
+            REFERENCES dbo.Institutes (Id) ON DELETE CASCADE
+        -- FK_Students_Class_ClassId is added in 019_Class.sql, since the Class table
+        -- is created there (after this script in run order).
     );
 
     CREATE INDEX IX_Students_InstituteId ON dbo.Students (InstituteId);
-    CREATE INDEX IX_Students_GradeId     ON dbo.Students (GradeId);
+    CREATE INDEX IX_Students_ClassId     ON dbo.Students (ClassId);
 END
 GO

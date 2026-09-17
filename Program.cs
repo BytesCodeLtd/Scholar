@@ -119,6 +119,17 @@ using (IServiceScope scope = app.Services.CreateScope())
 {
     ScholarDbContext db = scope.ServiceProvider.GetRequiredService<ScholarDbContext>();
     db.Database.Migrate();
+
+    // Ensure the app's roles exist on every environment.
+    RoleManager<IdentityRole> roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+    foreach (string role in Scholar.Constants.Roles.All)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+        {
+            await roleManager.CreateAsync(new IdentityRole(role));
+        }
+    }
 }
 
 if (!app.Environment.IsDevelopment())

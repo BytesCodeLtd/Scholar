@@ -12,11 +12,14 @@
         <input type="hidden" asp-for="Id" />
 
         <div class="mb-4">
-            <label asp-for="SectionId" class="block mb-1 text-sm font-medium text-gray-900">Section</label>
-            <select asp-for="SectionId" asp-items="Model.SectionOptions" required
-                    data-searchable data-placeholder="Search section…"
+            <label for="sectionIds" class="block mb-1 text-sm font-medium text-gray-900">Sections</label>
+            <select id="sectionIds" name="sectionIds" multiple required
+                    data-searchable data-placeholder="Select sections…"
                     class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-600 focus:border-brand-600 block w-full p-2.5">
-                <option value="">Select section</option>
+                @foreach (var opt in Model.SectionOptions)
+                {
+                    <option value="@opt.Value" selected="@(Model.SelectedSectionIds.Contains(int.Parse(opt.Value)))">@opt.Text</option>
+                }
             </select>
         </div>
 

@@ -29,6 +29,8 @@ namespace Scholar.Models.ViewModels
         public string Name { get; set; } = string.Empty;
 
         public int InstituteId { get; set; }
+
+        public List<int> SectionIds { get; set; } = [];
     }
 
     public class SubjectGroupIndexViewModel

@@ -331,7 +331,7 @@ namespace Scholar.Services
 
                 string html = await _templates.RenderAsync("SetPassword.html", new Dictionary<string, string>
                 {
-                    ["FullName"] = System.Net.WebUtility.HtmlEncode(user.FullName),
+                    ["FullName"] = System.Net.WebUtility.HtmlEncode(user.FullName ?? string.Empty),
                     ["Link"] = link ?? string.Empty
                 });
 

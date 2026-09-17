@@ -8,7 +8,7 @@ namespace Scholar.Models
     /// the existing row. InstituteId is denormalised from the student for fast,
     /// institute-scoped roster queries.
     /// </summary>
-    public class Attendance : IAuditableEntity
+    public class Attendance : IAuditableEntity, ITenantEntity
     {
         public int Id { get; set; }
 

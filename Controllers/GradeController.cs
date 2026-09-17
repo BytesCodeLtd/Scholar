@@ -1,30 +1,26 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Scholar.Models;
-using Scholar.Repositories;
+using Scholar.Services;
 
 namespace Scholar.Controllers
 {
     [Authorize]
     public class GradeController : Controller
     {
-        private readonly IRepository<Grade> _gradeRepository;
+        private readonly IGradeService _grades;
+        private readonly ILogger<GradeController> _logger;
 
-        public GradeController(IRepository<Grade> gradeRepository)
+        public GradeController(IGradeService grades, ILogger<GradeController> logger)
         {
-            _gradeRepository = gradeRepository;
+            _grades = grades;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index(int boardId)
         {
-            List<Grade> grades = await _gradeRepository.Query()
-                                                       .Where(g => g.Subjects.Any(s => s.BoardId == boardId))
-                                                       .OrderBy(g => g.Id)
-                                                       .ToListAsync();
+            _logger.LogDebug("Loading grades for board {BoardId}.", boardId);
             ViewBag.BoardId = boardId;
-            return View(grades);
+            return View(await _grades.GetGradesForBoardAsync(boardId));
         }
-
     }
 }

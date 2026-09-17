@@ -14,6 +14,7 @@ namespace Scholar.Constants
         public const string FullNameRequired = "Full name is required.";
         public const string InstituteRequired = "Institute name is required.";
         public const string InstituteExists = "An institute with this name already exists.";
+        public const string EmailExists = "An account with this email already exists.";
         public const string RoleRequired = "Please select a role.";
 
         // Student validation

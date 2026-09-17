@@ -254,26 +254,30 @@
 
         <div class="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden p-4 md:grid-cols-[380px_1fr]">
             @* Chapter / topic tree *@
-            <div class="flex min-h-0 flex-col rounded-lg border border-gray-200 p-3">
-                <label class="mb-2 flex items-center gap-2 text-sm font-medium text-gray-900">
-                    <input type="checkbox" id="select-all-chapters" class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-                    Select All Chapters
+            <div class="flex min-h-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
+                <label class="flex cursor-pointer items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 px-3 py-2.5">
+                    <span class="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                        <input type="checkbox" id="select-all-chapters" class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                        Select All Chapters
+                    </span>
+                    <span class="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-gray-500 ring-1 ring-gray-200">@Model.Chapters.Count</span>
                 </label>
-                <div class="flex-1 space-y-2 overflow-y-auto pr-1">
+                <div class="flex-1 space-y-2 overflow-y-auto p-2">
                     @foreach (var chapter in Model.Chapters)
                     {
-                        <div>
-                            <label class="flex items-center gap-2 text-sm text-gray-800">
-                                <input type="checkbox" class="chapter-check h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-                                <span class="font-medium">@chapter.Number. @chapter.Name</span>
+                        <div class="overflow-hidden rounded-lg border border-gray-100 bg-gray-50/60">
+                            <label class="flex cursor-pointer items-center gap-2.5 px-2.5 py-2 transition hover:bg-white">
+                                <input type="checkbox" class="chapter-check h-4 w-4 shrink-0 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
+                                <span class="inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded px-1 text-xs font-bold text-brand-700 ring-1 ring-inset ring-brand-200 bg-brand-50">@chapter.Number</span>
+                                <span class="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900">@chapter.Name</span>
                             </label>
-                            <div class="ms-6 mt-1 space-y-1">
+                            <div class="ms-[1.375rem] mb-1.5 me-1.5 space-y-0.5 border-s border-gray-200 ps-2">
                                 @foreach (var topic in chapter.Topics)
                                 {
-                                    <label class="flex items-center gap-2 text-sm text-gray-600">
-                                        <input type="checkbox" class="topic-check h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                                    <label class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm text-gray-600 transition hover:bg-white hover:text-gray-900">
+                                        <input type="checkbox" class="topic-check h-4 w-4 shrink-0 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                                                value="@topic.Id" @(Model.PreselectedTopicIds.Contains(topic.Id) ? "checked" : "") />
-                                        <span>@topic.Number @topic.Name</span>
+                                        <span class="min-w-0"><span class="text-gray-400">@topic.Number</span> @topic.Name</span>
                                     </label>
                                 }
                             </div>

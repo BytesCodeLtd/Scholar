@@ -1,123 +1,58 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Scholar.Common.Identity;
-using Scholar.Common.Papers;
+using Scholar.Constants;
 using Scholar.Enums;
 using Scholar.Models;
 using Scholar.Models.ViewModels;
-using Scholar.Repositories;
+using Scholar.Services;
 
 namespace Scholar.Controllers
 {
     [Authorize]
     public class TestController : Controller
     {
-        private readonly IRepository<Test> _tests;
-        private readonly IRepository<Question> _questions;
-        private readonly IRepository<Chapter> _chapters;
-        private readonly IRepository<Subject> _subjects;
-        private readonly IRepository<TestSettings> _testSettings;
-        private readonly IRepository<Institute> _institutes;
+        private readonly ITestService _tests;
+        private readonly ILogger<TestController> _logger;
 
-        public TestController(
-            IRepository<Test> tests,
-            IRepository<Question> questions,
-            IRepository<Chapter> chapters,
-            IRepository<Subject> subjects,
-            IRepository<TestSettings> testSettings,
-            IRepository<Institute> institutes)
+        public TestController(ITestService tests, ILogger<TestController> logger)
         {
             _tests = tests;
-            _questions = questions;
-            _chapters = chapters;
-            _subjects = subjects;
-            _testSettings = testSettings;
-            _institutes = institutes;
+            _logger = logger;
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? search = null)
         {
-            bool isSuperAdmin = User.IsInRole(Constants.Roles.SuperAdmin);
-            int? instituteId = User.GetInstituteId();
+            ViewBag.IsSuperAdmin = _tests.IsSuperAdmin;
+            ViewBag.Search = search;
 
-            ViewBag.IsSuperAdmin = isSuperAdmin;
-
-            List<PaperCard> papers = [];
-
-            if (isSuperAdmin || instituteId is not null)
-            {
-                IQueryable<Test> query = _tests.Query().Where(t => t.IsActive);
-
-                if (!isSuperAdmin)
-                {
-                    query = query.Where(t => t.InstituteId == instituteId);
-                }
-
-                papers = await query
-                                     .OrderByDescending(t => t.CreatedAt)
-                                     .Select(t => new PaperCard
-                                     {
-                                         Id = t.Id,
-                                         Title = t.Title,
-                                         Type = t.Type,
-                                         Date = t.Date,
-                                         Subject = t.Subject.Name,
-                                         Institute = t.Institute.Name,
-                                         TotalMarks = t.TotalMarks,
-                                         DurationMinutes = t.DurationMinutes,
-                                         QuestionCount = t.Questions.Count(q => q.IsActive),
-                                         CreatedAt = t.CreatedAt
-                                     })
-                                     .ToListAsync();
-            }
-
+            List<PaperCard> papers = await _tests.GetPapersAsync(search);
             return View(papers);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Search(string? search = null)
+        {
+            ViewBag.IsSuperAdmin = _tests.IsSuperAdmin;
+            ViewBag.Search = search;
+
+            List<PaperCard> papers = await _tests.GetPapersAsync(search);
+            return PartialView("_PaperGrid", papers);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(int[] selectedTopicIds, int subjectId, int? instituteId)
         {
-            Branding? branding = await LoadBrandingAsync(instituteId);
+            PaperBuilderViewModel? vm = await _tests.BuildPaperFormAsync(selectedTopicIds, subjectId, instituteId);
 
-            if (branding is null)
+            if (vm is null)
             {
-                TempData["Error"] = User.IsInRole(Constants.Roles.SuperAdmin)
+                TempData["Error"] = _tests.IsSuperAdmin
                     ? "Select an institute to generate a paper for."
                     : "Your account isn't linked to an institute, so papers can't be branded.";
                 return RedirectToAction("Index", "Dashboard");
             }
-
-            Subject? subject = await _subjects.Query()
-                                              .AsNoTracking()
-                                              .Include(s => s.Grade)
-                                              .FirstOrDefaultAsync(s => s.Id == subjectId);
-            if (subject is null)
-            {
-                return NotFound();
-            }
-
-            List<Chapter> chapters = await _chapters.Query()
-                                                    .AsNoTracking()
-                                                    .Where(c => c.SubjectId == subjectId)
-                                                    .Include(c => c.Topics)
-                                                    .OrderBy(c => c.Number)
-                                                    .ToListAsync();
-
-            PaperBuilderViewModel vm = new()
-            {
-                SubjectId = subjectId,
-                GradeId = subject.GradeId,
-                SubjectName = subject.Name,
-                GradeName = subject.Grade.Name,
-                InstituteId = branding.Institute.Id,
-                Settings = branding.Settings,
-                Chapters = chapters,
-                PreselectedTopicIds = [.. (selectedTopicIds ?? [])]
-            };
 
             return View(vm);
         }
@@ -125,311 +60,53 @@ namespace Scholar.Controllers
         [HttpGet]
         public async Task<IActionResult> SearchQuestions(int[] topicIds, QuestionType type, QuestionCategory[] categories)
         {
-            if (topicIds is null || topicIds.Length == 0)
-            {
-                return PartialView("_QuestionPicker", new List<Question>());
-            }
-
-            IQueryable<Question> query = _questions.Query()
-                                                   .AsNoTracking()
-                                                   .Include(q => q.Options)
-                                                   .Where(q => q.IsActive && topicIds.Contains(q.TopicId) && q.Type == type);
-
-            if (categories is { Length: > 0 })
-            {
-                query = query.Where(q => categories.Contains(q.Category));
-            }
-
-            List<Question> questions = await query.OrderBy(q => q.Id)
-                                                  .ToListAsync();
-
+            List<Question> questions = await _tests.SearchQuestionsAsync(topicIds, type, categories);
             return PartialView("_QuestionPicker", questions);
         }
 
         [HttpPost]
         public async Task<IActionResult> RenderSections([FromBody] RenderSectionsRequest request)
         {
-            Branding? branding = await LoadBrandingAsync(request?.InstituteId);
-
-            if (branding is null)
-            {
-                return Forbid();
-            }
-
-            PaperSectionsViewModel vm = new()
-            {
-                Settings = branding.Settings,
-                Sections = await BuildSectionModelsAsync(request?.Sections ?? new())
-            };
-
-            return PartialView("_PaperSectionsList", vm);
+            PaperSectionsViewModel? vm = await _tests.RenderSectionsAsync(request);
+            return vm is null ? Forbid() : PartialView("_PaperSectionsList", vm);
         }
 
         [HttpPost]
         public async Task<IActionResult> RenderCanvas([FromBody] RenderCanvasRequest request)
         {
-            Branding? branding = await LoadBrandingAsync(request?.InstituteId);
-
-            if (branding is null)
-            {
-                return Forbid();
-            }
-
-            // Institute branding stays authoritative; the rail only overrides
-            // the user-editable slice.
-            PaperRenderSettings settings = branding.Settings;
-            request?.Settings?.ApplyTo(settings);
-
-            List<PaperSectionRenderModel> sections = await BuildSectionModelsAsync(request?.Sections ?? new());
-
-            PaperDocumentViewModel vm = new()
-            {
-                Title = request?.Title ?? string.Empty,
-                PaperType = request?.PaperType,
-                DurationMinutes = request?.DurationMinutes ?? 0,
-                SubjectName = request?.SubjectName ?? string.Empty,
-                GradeName = request?.GradeName ?? string.Empty,
-                TotalMarks = sections.Sum(m => m.TotalMarks),
-                Settings = settings,
-                Sections = sections
-            };
-
-            return PartialView("_PaperCanvas", vm);
+            PaperDocumentViewModel? vm = await _tests.RenderCanvasAsync(request);
+            return vm is null ? Forbid() : PartialView("_PaperCanvas", vm);
         }
 
         [HttpPost]
         public async Task<IActionResult> Save([FromBody] SavePaperRequest request)
         {
-            Branding? branding = await LoadBrandingAsync(request?.InstituteId);
-
-            if (branding is null)
-            {
-                return Forbid();
-            }
-
-            if (request is null || string.IsNullOrWhiteSpace(request.Title))
+            if (string.IsNullOrWhiteSpace(request?.Title))
             {
                 return BadRequest(new { message = "Give the paper a title before saving." });
             }
 
-            List<PaperSectionInput> inputs = [.. (request.Sections ?? []).Where(s => s.QuestionIds is { Count: > 0 })];
-
-            if (inputs.Count == 0)
+            if (!(request.Sections ?? []).Any(s => s.QuestionIds is { Count: > 0 }))
             {
                 return BadRequest(new { message = "Add at least one question section before saving." });
             }
 
-            List<PaperSectionRenderModel> models = await BuildSectionModelsAsync(inputs);
-
-            int totalMarks = models.Sum(m => m.TotalMarks);
-
-            // Freeze the live rail settings into the snapshot so the saved paper
-            // prints exactly as previewed; fall back to institute defaults.
-            PaperRenderSettings snapshot = branding.Settings;
-            request.Settings?.ApplyTo(snapshot);
-
-            Test test = new()
+            int? id = await _tests.SaveAsync(request);
+            if (id is null)
             {
-                Title = request.Title.Trim(),
-                Type = request.PaperType?.Trim() ?? string.Empty,
-                Date = DateOnly.FromDateTime(DateTime.UtcNow),
-                InstituteId = branding.Institute.Id,
-                SubjectId = request.SubjectId,
-                TotalMarks = totalMarks,
-                DurationMinutes = request.DurationMinutes,
-                PaperSettingsSnapshot = JsonSerializer.Serialize(snapshot)
-            };
-
-            int order = 1;
-            foreach ((PaperSectionInput input, PaperSectionRenderModel model) in inputs.Zip(models))
-            {
-                TestSection section = new()
-                {
-                    Test = test,
-                    Order = order++,
-                    Type = input.Type,
-                    Instruction = SectionInstructions.For(input.Type),
-                    MarksPerQuestion = input.MarksPerQuestion
-                };
-
-                int qOrder = 1;
-                foreach (Question q in model.Questions)
-                {
-                    section.Questions.Add(new TestQuestion
-                    {
-                        Test = test,
-                        QuestionId = q.Id,
-                        Order = qOrder++
-                    });
-                }
-
-                test.Sections.Add(section);
+                _logger.LogWarning("Save paper blocked: no institute branding available.");
+                return Forbid();
             }
 
-            await _tests.AddAsync(test);
-            await _tests.SaveChangesAsync();
-
-            return Ok(new { id = test.Id, redirectUrl = Url.Action(nameof(Print), new { id = test.Id }) });
+            _logger.LogInformation("Paper {Id} saved ({Title}).", id, request.Title);
+            return Ok(new { id, redirectUrl = Url.Action(nameof(Print), new { id }) });
         }
 
         [HttpGet]
         public async Task<IActionResult> Print(int id)
         {
-            Test? test = await _tests.Query()
-                                     .AsNoTracking()
-                                     .Include(t => t.Subject)
-                                         .ThenInclude(s => s.Grade)
-                                     .Include(t => t.Sections)
-                                         .ThenInclude(s => s.Questions)
-                                             .ThenInclude(tq => tq.Question)
-                                                 .ThenInclude(q => q.Options)
-                                     .FirstOrDefaultAsync(t => t.Id == id);
-
-            if (test is null)
-            {
-                return NotFound();
-            }
-
-            // Scope: institute members only (super admins may view any).
-            if (!User.IsInRole(Constants.Roles.SuperAdmin) && test.InstituteId != User.GetInstituteId())
-            {
-                return Forbid();
-            }
-
-            PaperRenderSettings settings = ResolveSnapshot(test);
-
-            List<PaperSectionRenderModel> sections = [];
-            int start = 1;
-
-            foreach (TestSection s in test.Sections.OrderBy(s => s.Order))
-            {
-                List<Question> qs = [.. s.Questions.OrderBy(q => q.Order).Select(q => q.Question)];
-                sections.Add(new PaperSectionRenderModel
-                {
-                    SectionNumber = s.Order,
-                    Instruction = s.Instruction,
-                    Type = s.Type,
-                    MarksPerQuestion = s.MarksPerQuestion,
-                    StartIndex = start,
-                    Questions = qs
-                });
-                start += qs.Count;
-            }
-
-            PaperDocumentViewModel vm = new()
-            {
-                TestId = test.Id,
-                Title = test.Title,
-                PaperType = test.Type,
-                DurationMinutes = test.DurationMinutes,
-                TotalMarks = test.TotalMarks,
-                SubjectName = test.Subject.Name,
-                GradeName = test.Subject.Grade.Name,
-                Settings = settings,
-                Sections = sections
-            };
-
-            return View(vm);
-        }
-
-        private sealed record Branding(Institute Institute, PaperRenderSettings Settings);
-
-        private async Task<Branding?> LoadBrandingAsync(int? requestedInstituteId = null)
-        {
-            int? instituteId = ResolveInstituteId(requestedInstituteId);
-
-            if (instituteId is null)
-            {
-                return null;
-            }
-
-            Institute? institute = await _institutes.Query()
-                                                    .AsNoTracking()
-                                                    .Where(i => i.Id == instituteId.Value)
-                                                    .Select(i => new Institute
-                                                    {
-                                                        Id = i.Id,
-                                                        Name = i.Name,
-                                                        Address = i.Address,
-                                                        LogoUrl = i.LogoUrl
-                                                    })
-                                                    .FirstOrDefaultAsync();
-
-            if (institute is null)
-            {
-                return null;
-            }
-
-            TestSettings settings = await _testSettings.Query()
-                                                       .AsNoTracking()
-                                                       .FirstOrDefaultAsync(p => p.InstituteId == institute.Id)
-                                     ?? new TestSettings { InstituteId = institute.Id };
-
-            return new Branding(institute, PaperRenderSettings.From(settings, institute));
-        }
-
-        private int? ResolveInstituteId(int? requestedInstituteId)
-            => User.IsInRole(Constants.Roles.SuperAdmin)
-                ? requestedInstituteId
-                : User.GetInstituteId();
-
-        private async Task<List<PaperSectionRenderModel>> BuildSectionModelsAsync(List<PaperSectionInput> inputs)
-        {
-            List<int> allIds = inputs.SelectMany(s => s.QuestionIds).Distinct().ToList();
-
-            Dictionary<int, Question> byId = await _questions.Query()
-                                                             .AsNoTracking()
-                                                             .Include(q => q.Options)
-                                                             .Include(q => q.Topic)
-                                                                .ThenInclude(t => t.Chapter)
-                                                             .Where(q => allIds.Contains(q.Id))
-                                                             .ToDictionaryAsync(q => q.Id);
-
-            List<PaperSectionRenderModel> models = [];
-            int start = 1;
-            int order = 1;
-
-            foreach (PaperSectionInput input in inputs)
-            {
-                List<Question> questions = [.. input.QuestionIds.Where(byId.ContainsKey).Select(id => byId[id])];
-
-                models.Add(new PaperSectionRenderModel
-                {
-                    SectionNumber = order++,
-                    Instruction = SectionInstructions.For(input.Type),
-                    Type = input.Type,
-                    MarksPerQuestion = input.MarksPerQuestion,
-                    StartIndex = start,
-                    Questions = questions
-                });
-
-                start += questions.Count;
-            }
-
-            return models;
-        }
-
-
-        private static PaperRenderSettings ResolveSnapshot(Test test)
-        {
-            if (!string.IsNullOrWhiteSpace(test.PaperSettingsSnapshot))
-            {
-                try
-                {
-                    PaperRenderSettings? snap = JsonSerializer.Deserialize<PaperRenderSettings>(test.PaperSettingsSnapshot);
-
-                    if (snap is not null)
-                    {
-                        return snap;
-                    }
-                }
-                catch (JsonException)
-                {
-                    // Fall through to defaults on a corrupt snapshot.
-                }
-            }
-
-            return new PaperRenderSettings { InstituteName = test.Institute?.Name ?? string.Empty };
+            PaperDocumentViewModel? vm = await _tests.GetPrintModelAsync(id);
+            return vm is null ? NotFound() : View(vm);
         }
     }
 }

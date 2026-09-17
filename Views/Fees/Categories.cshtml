@@ -1,0 +1,27 @@
+@using Scholar.Models.ViewModels
+@model PagedResult<FeeCategoryRow>
+@{
+    ViewData["Title"] = "Fee Categories";
+    bool isSuperAdmin = ViewBag.IsSuperAdmin ?? false;
+
+    var builder = TableModel.For(Model)
+        .Title("Fee Categories")
+        .WithSearch()
+        .WithRowMenu(nameof(FeeCategoryRow.Id),
+            RowMenus.Edit(ControllerNames.Fees, "CategoryForm"),
+            RowMenus.Delete(ControllerNames.Fees, "DeleteCategory"))
+        .WithAction("+ New Category", "CategoryForm", ControllerNames.Fees, Scholar.Enums.TableActionStyle.Primary)
+        .Column("Category", nameof(FeeCategoryRow.Name), sortable: true)
+        .Column("Default Amount", nameof(FeeCategoryRow.DefaultAmount));
+
+    if (isSuperAdmin)
+    {
+        builder.Column("Institute", nameof(FeeCategoryRow.Institute));
+    }
+
+    builder.Column("Status", nameof(FeeCategoryRow.IsActive), sortable: true);
+
+    var table = builder.Build();
+}
+
+@await Component.InvokeAsync("DataTable", new { model = table })

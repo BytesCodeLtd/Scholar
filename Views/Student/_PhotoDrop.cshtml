@@ -1,0 +1,16 @@
+@model (string Field, string? Existing)
+@{
+    // A styled drag-and-drop file input. The input name must match the view-model
+    // property so model binding picks up the uploaded file.
+    var id = $"photo_{Model.Field}";
+}
+<label for="@id" data-photo-drop
+       class="flex items-center justify-center gap-2 w-full p-2.5 text-sm text-gray-500 bg-white border border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+    <svg class="w-4 h-4 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15V3m0 0L8 7m4-4 4 4M4 15v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+    </svg>
+    <span data-photo-label class="truncate">
+        @(string.IsNullOrWhiteSpace(Model.Existing) ? "Drag and drop a file here or click" : "Change photo")
+    </span>
+    <input type="file" id="@id" name="@Model.Field" accept="image/*" class="hidden" />
+</label>

@@ -1,0 +1,43 @@
+@using Scholar.Models.ViewModels
+@model PagedResult<InvoiceRow>
+@{
+    ViewData["Title"] = "Fees";
+    bool isSuperAdmin = ViewBag.IsSuperAdmin ?? false;
+    string? status = ViewBag.Status as string;
+
+    string TabCss(string? key) =>
+        string.Equals(status, key, StringComparison.OrdinalIgnoreCase) || (key is null && string.IsNullOrEmpty(status))
+            ? "bg-brand-600 text-white border-brand-600"
+            : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50";
+
+    var builder = TableModel.For(Model)
+        .Title("Invoices")
+        .WithSearch()
+        .WithRowMenu(nameof(InvoiceRow.Id), RowMenus.View(ControllerNames.Fees, "Details"))
+        .WithAction("Generate Invoices", "Generate", ControllerNames.Fees, Scholar.Enums.TableActionStyle.Primary)
+        .WithAction("Fee Categories", "Categories", ControllerNames.Fees, Scholar.Enums.TableActionStyle.Secondary)
+        .Column("Student", nameof(InvoiceRow.Student), sortable: true)
+        .Column("Class", nameof(InvoiceRow.Class))
+        .Column("Period", nameof(InvoiceRow.Period))
+        .Column("Due Date", nameof(InvoiceRow.DueDate))
+        .Column("Total", nameof(InvoiceRow.Total))
+        .Column("Balance", nameof(InvoiceRow.Balance))
+        .Column("Status", nameof(InvoiceRow.Status));
+
+    if (isSuperAdmin)
+    {
+        builder.Column("Institute", nameof(InvoiceRow.Institute));
+    }
+
+    var table = builder.Build();
+}
+
+<div class="mb-4 flex flex-wrap gap-2">
+    <a asp-action="Index" class="rounded-lg border px-3 py-1.5 text-sm font-medium @TabCss(null)">All</a>
+    <a asp-action="Index" asp-route-status="unpaid" class="rounded-lg border px-3 py-1.5 text-sm font-medium @TabCss("unpaid")">Unpaid</a>
+    <a asp-action="Index" asp-route-status="partial" class="rounded-lg border px-3 py-1.5 text-sm font-medium @TabCss("partial")">Partial</a>
+    <a asp-action="Index" asp-route-status="overdue" class="rounded-lg border px-3 py-1.5 text-sm font-medium @TabCss("overdue")">Overdue</a>
+    <a asp-action="Index" asp-route-status="paid" class="rounded-lg border px-3 py-1.5 text-sm font-medium @TabCss("paid")">Paid</a>
+</div>
+
+@await Component.InvokeAsync("DataTable", new { model = table })

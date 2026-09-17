@@ -26,6 +26,12 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Restore client-side libraries (LibMan)
+        run: |
+          dotnet tool install -g Microsoft.Web.LibraryManager.Cli
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          libman restore
+
       - name: Publish
         run: dotnet publish Scholar.csproj -c Release -o ./publish
 

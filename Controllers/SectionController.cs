@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Scholar.Common.Paging;
+using Scholar.Constants;
 using Scholar.Services;
 
 namespace Scholar.Controllers
@@ -48,7 +49,26 @@ namespace Scholar.Controllers
             }
 
             _logger.LogDebug("Saved section (id {Id}).", id);
-            TempData["Success"] = id is null ? "Section added." : "Section updated.";
+            TempData["Success"] = id is null ? MsgKey.Success.Created(Key.Section) : MsgKey.Success.Updated(Key.Section);
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            bool deleted = await _sections.DeleteAsync(id);
+
+            if (deleted)
+            {
+                _logger.LogDebug("Deleted section (id {Id}).", id);
+                TempData["Success"] = MsgKey.Success.Deleted(Key.Section);
+            }
+            else
+            {
+                TempData["Error"] = MsgKey.Error.DeleteFailed(Key.Section);
+            }
+
             return RedirectToAction(nameof(Index));
         }
     }

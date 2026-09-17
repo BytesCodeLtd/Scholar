@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 using Scholar.Common.Paging;
 
 namespace Scholar.Repositories
@@ -20,6 +21,8 @@ namespace Scholar.Repositories
         void Update(T entity);
 
         void Remove(T entity);
+
+        Task<bool> DeleteAsync(int id);
 
         Task<bool> SoftDeleteAsync(int id);
 

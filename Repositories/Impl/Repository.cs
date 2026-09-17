@@ -139,6 +139,29 @@ namespace Scholar.Repositories.Impl
 
         public void Remove(T entity) => dbSet.Remove(entity);
 
+        public async Task<bool> DeleteAsync(int id)
+        {
+            T? entity = await dbSet.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
+
+            if (entity is null)
+            {
+                return false;
+            }
+
+            dbSet.Remove(entity);
+
+            try
+            {
+                await SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public Task<bool> SoftDeleteAsync(int id) => SetActiveAsync(id, false);
 
         public Task<bool> ActivateAsync(int id) => SetActiveAsync(id, true);
@@ -157,7 +180,6 @@ namespace Scholar.Repositories.Impl
                 throw new NotSupportedException($"{typeof(T).Name} does not implement {nameof(IAuditableEntity)}, so its active state cannot be changed.");
             }
 
-            // Entity is tracked by FindAsync; UpdatedAt is stamped in SaveChangesAsync.
             audit.IsActive = active;
             await SaveChangesAsync();
 

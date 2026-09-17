@@ -11,6 +11,9 @@ namespace Scholar.Constants
         public const string Chapter = "Chapter";
         public const string Grade = "Grade";
         public const string Subject = "Subject";
+        public const string Section = "Section";
+        public const string Class = "Class";
+        public const string SubjectGroup = "Subject group";
         public const string Teacher = "Teacher";
         public const string Student = "Student";
         public const string Test = "Test";

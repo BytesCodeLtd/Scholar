@@ -5,17 +5,12 @@ using Scholar.Models;
 
 namespace Scholar.Data
 {
-    public class ScholarDbContext : IdentityDbContext<ApplicationUser>
+    public class ScholarDbContext(DbContextOptions<ScholarDbContext> options, ITenantProvider? tenant = null) : IdentityDbContext<ApplicationUser>(options)
     {
-        private readonly int? _tenantId;
-        private readonly bool _bypassTenantFilter;
+        private readonly ITenantProvider? _tenant = tenant;
 
-        public ScholarDbContext(DbContextOptions<ScholarDbContext> options, ITenantProvider? tenant = null)
-            : base(options)
-        {
-            _tenantId = tenant?.InstituteId;
-            _bypassTenantFilter = tenant?.BypassFilter ?? true;
-        }
+        private int? _tenantId => _tenant?.InstituteId;
+        private bool _bypassTenantFilter => _tenant?.BypassFilter ?? true;
 
         public DbSet<Institute> Institutes => Set<Institute>();
         public DbSet<Board> Boards => Set<Board>();
@@ -32,6 +27,8 @@ namespace Scholar.Data
         public DbSet<Attendance> Attendances => Set<Attendance>();
         public DbSet<Section> Sections => Set<Section>();
         public DbSet<InstituteClass> Classes => Set<InstituteClass>();
+        public DbSet<InstituteSubject> InstituteSubjects => Set<InstituteSubject>();
+        public DbSet<SubjectGroup> SubjectGroups => Set<SubjectGroup>();
         public DbSet<TestSettings> TestSettings => Set<TestSettings>();
         public DbSet<PastPaper> PastPapers => Set<PastPaper>();
         public DbSet<TestSection> TestSections => Set<TestSection>();
@@ -210,6 +207,52 @@ namespace Scholar.Data
             builder.Entity<InstituteClass>()
                 .Property(c => c.Name).IsRequired().HasMaxLength(50);
 
+            // Subjects are institute-owned; removed with their institute. Type is stored
+            // as a readable string rather than an int.
+            builder.Entity<InstituteSubject>()
+                .HasOne(s => s.Institute).WithMany()
+                .HasForeignKey(s => s.InstituteId).OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<InstituteSubject>()
+                .HasIndex(s => s.InstituteId);
+            builder.Entity<InstituteSubject>()
+                .Property(s => s.Name).IsRequired().HasMaxLength(100);
+            builder.Entity<InstituteSubject>()
+                .Property(s => s.Code).IsRequired().HasMaxLength(30);
+            builder.Entity<InstituteSubject>()
+                .Property(s => s.Type).HasConversion<string>().HasMaxLength(20);
+
+            // Subject groups are institute-owned and belong to one class. Institute link
+            // cascades; the class link is Restrict to avoid a second cascade path.
+            builder.Entity<SubjectGroup>()
+                .HasOne(g => g.Institute).WithMany()
+                .HasForeignKey(g => g.InstituteId).OnDelete(DeleteBehavior.Cascade);
+            builder.Entity<SubjectGroup>()
+                .HasOne(g => g.Class).WithMany()
+                .HasForeignKey(g => g.ClassId).OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<SubjectGroup>()
+                .HasIndex(g => g.InstituteId);
+            builder.Entity<SubjectGroup>()
+                .Property(g => g.Name).IsRequired().HasMaxLength(100);
+            builder.Entity<SubjectGroup>()
+                .Property(g => g.Description).HasMaxLength(500);
+
+            // Many-to-many joins. The group side cascades (deleting a group clears its
+            // join rows); the other side is Restrict to avoid multiple cascade paths
+            // back to Institute (which already cascades through the group).
+            builder.Entity<SubjectGroup>()
+                .HasMany(g => g.Sections).WithMany()
+                .UsingEntity(
+                    "SubjectGroupSection",
+                    r => r.HasOne(typeof(Section)).WithMany().HasForeignKey("SectionId").OnDelete(DeleteBehavior.Restrict),
+                    l => l.HasOne(typeof(SubjectGroup)).WithMany().HasForeignKey("SubjectGroupId").OnDelete(DeleteBehavior.Cascade));
+
+            builder.Entity<SubjectGroup>()
+                .HasMany(g => g.Subjects).WithMany()
+                .UsingEntity(
+                    "SubjectGroupSubject",
+                    r => r.HasOne(typeof(InstituteSubject)).WithMany().HasForeignKey("InstituteSubjectId").OnDelete(DeleteBehavior.Restrict),
+                    l => l.HasOne(typeof(SubjectGroup)).WithMany().HasForeignKey("SubjectGroupId").OnDelete(DeleteBehavior.Cascade));
+
             builder.Entity<FeeCategory>()
                 .HasOne(c => c.Institute).WithMany()
                 .HasForeignKey(c => c.InstituteId).OnDelete(DeleteBehavior.Restrict);
@@ -270,6 +313,8 @@ namespace Scholar.Data
             ApplyTenantFilter<Attendance>(builder);
             ApplyTenantFilter<Section>(builder);
             ApplyTenantFilter<InstituteClass>(builder);
+            ApplyTenantFilter<InstituteSubject>(builder);
+            ApplyTenantFilter<SubjectGroup>(builder);
             ApplyTenantFilter<Test>(builder);
             ApplyTenantFilter<TestSettings>(builder);
             ApplyTenantFilter<FeeCategory>(builder);

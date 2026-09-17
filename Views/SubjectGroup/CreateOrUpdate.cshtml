@@ -1,0 +1,97 @@
+@using Scholar.Models.ViewModels
+@model SubjectGroupFormViewModel
+@{
+    bool isEdit = Model.Id != 0;
+    ViewData["Title"] = isEdit ? "Edit Subject Group" : "New Subject Group";
+
+    const string checkItem = "flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 hover:bg-gray-50";
+    const string checkList = "mt-1 flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-2";
+    const string field = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-600 focus:border-brand-600 block w-full p-2.5";
+}
+
+<div class="p-4 max-w-2xl">
+    <h1 class="text-xl font-semibold text-gray-900">@ViewData["Title"]</h1>
+
+    <form asp-action="CreateOrUpdate" method="post" data-sg-form
+          class="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm space-y-4">
+        <input type="hidden" asp-for="Id" />
+
+        @if (Model.IsSuperAdmin)
+        {
+            @* On edit the institute is fixed; show it (disabled) so the choices below stay scoped to it. *@
+            <div>
+                <label for="instituteId" class="block mb-1 text-sm font-medium text-gray-900">Institute</label>
+                <select id="instituteId" name="instituteId" required data-sg-institute
+                        disabled="@(isEdit ? "disabled" : null)" class="@field">
+                    <option value="">Select institute</option>
+                    @foreach (var opt in Model.InstituteOptions)
+                    {
+                        <option value="@opt.Value" selected="@(Model.InstituteId?.ToString() == opt.Value)">@opt.Text</option>
+                    }
+                </select>
+            </div>
+        }
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label asp-for="Name" class="block mb-1 text-sm font-medium text-gray-900">Name</label>
+                <input asp-for="Name" required maxlength="100" placeholder="e.g. Grade 9 Science" class="@field" />
+            </div>
+
+            <div>
+                <label for="classId" class="block mb-1 text-sm font-medium text-gray-900">Class</label>
+                <select id="classId" name="classId" required data-sg-class class="@field">
+                    <option value="">Select class</option>
+                    @foreach (var c in Model.ClassOptions)
+                    {
+                        <option value="@c.Id" data-institute="@c.InstituteId" selected="@(Model.ClassId == c.Id)">@c.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <span class="block mb-1 text-sm font-medium text-gray-900">Sections</span>
+            <div class="@checkList">
+                @foreach (var s in Model.SectionOptions)
+                {
+                    <label data-sg-item data-institute="@s.InstituteId" class="@checkItem">
+                        <input type="checkbox" name="sectionIds" value="@s.Id" checked="@(Model.SelectedSectionIds.Contains(s.Id))"
+                               class="w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+                        @s.Name
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div>
+            <span class="block mb-1 text-sm font-medium text-gray-900">Subjects</span>
+            <div class="@checkList">
+                @foreach (var s in Model.SubjectOptions)
+                {
+                    <label data-sg-item data-institute="@s.InstituteId" class="@checkItem">
+                        <input type="checkbox" name="subjectIds" value="@s.Id" checked="@(Model.SelectedSubjectIds.Contains(s.Id))"
+                               class="w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+                        @s.Name
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div>
+            <label asp-for="Description" class="block mb-1 text-sm font-medium text-gray-900">Description</label>
+            <textarea asp-for="Description" rows="2" maxlength="500"
+                      placeholder="Optional notes about this group" class="@field"></textarea>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button type="submit"
+                    class="text-white bg-brand-600 hover:bg-brand-700 font-medium rounded-lg text-sm px-5 py-2.5">
+                Save
+            </button>
+            <a asp-action="Index" class="text-sm font-medium text-gray-600 hover:text-gray-900">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script src="~/js/subject-group.js" asp-append-version="true"></script>

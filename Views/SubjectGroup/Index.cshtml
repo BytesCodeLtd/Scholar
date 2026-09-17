@@ -1,0 +1,112 @@
+@using Scholar.Common.Tables
+@using Scholar.Constants
+@using Scholar.Models.ViewModels
+@model SubjectGroupIndexViewModel
+@{
+    ViewData["Title"] = "Subject Groups";
+
+    var builder = TableModel.For(Model.Groups)
+                            .Title("Subject Groups")
+                            .WithSearch()
+                            .WithCheckbox(show: true, valueProperty: nameof(SubjectGroupRow.Id))
+                            .WithRowMenu(nameof(SubjectGroupRow.Id), RowMenus.SubjectGroup())
+                            .Column(TableColumns.Name, nameof(SubjectGroupRow.Name), sortable: true)
+                            .Column(TableColumns.Class, nameof(SubjectGroupRow.ClassName), sortable: true)
+                            .Column(TableColumns.Sections, nameof(SubjectGroupRow.Sections))
+                            .Column(TableColumns.Subjects, nameof(SubjectGroupRow.Subjects))
+                            .Column(TableColumns.Description, nameof(SubjectGroupRow.Description));
+
+    // SuperAdmins see groups from every institute, so show which one each belongs to.
+    if (Model.IsSuperAdmin)
+    {
+        builder.Column(TableColumns.Institute, nameof(SubjectGroupRow.InstituteName), sortable: true);
+    }
+
+    builder.Column(TableColumns.Status, nameof(SubjectGroupRow.IsActive), sortable: true);
+
+    TableModel table = builder.Build();
+
+    const string checkItem = "flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 hover:bg-gray-50";
+    const string checkList = "mt-1 flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-2";
+    const string field = "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-600 focus:border-brand-600 block w-full p-2.5";
+}
+
+<div class="flex w-full flex-col space-y-5">
+    <form asp-action="CreateOrUpdate" method="post" data-sg-form
+          class="shrink-0 rounded-lg border border-gray-200 bg-white p-4 shadow-sm space-y-4 max-w-3xl">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            @if (Model.IsSuperAdmin)
+            {
+                <div class="sm:col-span-2">
+                    <label for="instituteId" class="block mb-1 text-sm font-medium text-gray-900">Institute</label>
+                    <select id="instituteId" name="instituteId" required data-sg-institute class="@field">
+                        <option value="">Select institute</option>
+                        @foreach (var opt in Model.InstituteOptions)
+                        {
+                            <option value="@opt.Value">@opt.Text</option>
+                        }
+                    </select>
+                </div>
+            }
+
+            <div>
+                <label for="name" class="block mb-1 text-sm font-medium text-gray-900">Name</label>
+                <input type="text" id="name" name="name" required maxlength="100" placeholder="e.g. Grade 9 Science" class="@field" />
+            </div>
+
+            <div>
+                <label for="classId" class="block mb-1 text-sm font-medium text-gray-900">Class</label>
+                <select id="classId" name="classId" required data-sg-class class="@field">
+                    <option value="">Select class</option>
+                    @foreach (var c in Model.ClassOptions)
+                    {
+                        <option value="@c.Id" data-institute="@c.InstituteId">@c.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <span class="block mb-1 text-sm font-medium text-gray-900">Sections</span>
+            <div class="@checkList">
+                @foreach (var s in Model.SectionOptions)
+                {
+                    <label data-sg-item data-institute="@s.InstituteId" class="@checkItem">
+                        <input type="checkbox" name="sectionIds" value="@s.Id"
+                               class="w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+                        @s.Name
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div>
+            <span class="block mb-1 text-sm font-medium text-gray-900">Subjects</span>
+            <div class="@checkList">
+                @foreach (var s in Model.SubjectOptions)
+                {
+                    <label data-sg-item data-institute="@s.InstituteId" class="@checkItem">
+                        <input type="checkbox" name="subjectIds" value="@s.Id"
+                               class="w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
+                        @s.Name
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div>
+            <label for="description" class="block mb-1 text-sm font-medium text-gray-900">Description</label>
+            <textarea id="description" name="description" rows="2" maxlength="500"
+                      placeholder="Optional notes about this group" class="@field"></textarea>
+        </div>
+
+        <button type="submit"
+                class="text-white bg-brand-600 hover:bg-brand-700 font-medium rounded-lg text-sm px-5 py-2.5">
+            Add
+        </button>
+    </form>
+
+    @await Component.InvokeAsync("DataTable", new { model = table })
+</div>
+
+<script src="~/js/subject-group.js" asp-append-version="true"></script>

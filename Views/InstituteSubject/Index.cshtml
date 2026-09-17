@@ -1,0 +1,77 @@
+@using Scholar.Common.Tables
+@using Scholar.Constants
+@using Scholar.Enums
+@using Scholar.Models.ViewModels
+@model InstituteSubjectIndexViewModel
+@{
+    ViewData["Title"] = "Subjects";
+
+    var builder = TableModel.For(Model.Subjects)
+                            .Title("Subjects")
+                            .WithSearch()
+                            .WithCheckbox(show: true, valueProperty: nameof(InstituteSubjectRow.Id))
+                            .WithRowMenu(nameof(InstituteSubjectRow.Id), RowMenus.Subject())
+                            .Column(TableColumns.Subject, nameof(InstituteSubjectRow.Name), sortable: true)
+                            .Column(TableColumns.SubjectCode, nameof(InstituteSubjectRow.Code), sortable: true)
+                            .Column(TableColumns.SubjectType, nameof(InstituteSubjectRow.Type), sortable: true);
+
+    // SuperAdmins see subjects from every institute, so show which one each belongs to.
+    if (Model.IsSuperAdmin)
+    {
+        builder.Column(TableColumns.Institute, nameof(InstituteSubjectRow.InstituteName), sortable: true);
+    }
+
+    builder.Column(TableColumns.Status, nameof(InstituteSubjectRow.IsActive), sortable: true);
+
+    TableModel table = builder.Build();
+}
+
+<div class="flex w-full flex-col space-y-5">
+    <h1 class="text-xl font-semibold text-gray-900">Subjects</h1>
+
+    <form asp-action="CreateOrUpdate" method="post"
+          class="shrink-0 rounded-lg border border-gray-200 bg-white p-4 shadow-sm flex flex-wrap items-end gap-3 max-w-3xl">
+        @if (Model.IsSuperAdmin)
+        {
+            <div class="flex-1 min-w-[12rem]">
+                <label for="instituteId" class="block mb-1 text-sm font-medium text-gray-900">Institute</label>
+                <select id="instituteId" name="instituteId" required data-searchable data-placeholder="Search institute…"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-600 focus:border-brand-600 block w-full p-2.5">
+                    <option value="">Select institute</option>
+                    @foreach (var opt in Model.InstituteOptions)
+                    {
+                        <option value="@opt.Value">@opt.Text</option>
+                    }
+                </select>
+            </div>
+        }
+        <div class="flex-1 min-w-[10rem]">
+            <label for="name" class="block mb-1 text-sm font-medium text-gray-900">Subject name</label>
+            <input type="text" id="name" name="name" required maxlength="100"
+                   placeholder="e.g. Physics"
+                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-600 focus:border-brand-600 block w-full p-2.5" />
+        </div>
+        <div class="flex-1 min-w-[8rem]">
+            <label for="code" class="block mb-1 text-sm font-medium text-gray-900">Subject code</label>
+            <input type="text" id="code" name="code" required maxlength="30"
+                   placeholder="e.g. PHY"
+                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-600 focus:border-brand-600 block w-full p-2.5" />
+        </div>
+        <div class="flex-1 min-w-[8rem]">
+            <label for="type" class="block mb-1 text-sm font-medium text-gray-900">Subject type</label>
+            <select id="type" name="type" required
+                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-brand-600 focus:border-brand-600 block w-full p-2.5">
+                @foreach (var t in Enum.GetValues<SubjectType>())
+                {
+                    <option value="@t">@t</option>
+                }
+            </select>
+        </div>
+        <button type="submit"
+                class="text-white bg-brand-600 hover:bg-brand-700 font-medium rounded-lg text-sm px-5 py-2.5">
+            Add
+        </button>
+    </form>
+
+    @await Component.InvokeAsync("DataTable", new { model = table })
+</div>

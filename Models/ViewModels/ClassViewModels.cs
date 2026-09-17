@@ -9,7 +9,7 @@ namespace Scholar.Models.ViewModels
 
         public string Name { get; set; } = string.Empty;
 
-        public string SectionName { get; set; } = string.Empty;
+        public List<string> Sections { get; set; } = [];
 
         public string? InstituteName { get; set; }
 
@@ -31,8 +31,8 @@ namespace Scholar.Models.ViewModels
 
         public string Name { get; set; } = string.Empty;
 
-        public int? SectionId { get; set; }
-
         public IReadOnlyList<SelectListItem> SectionOptions { get; set; } = [];
+
+        public HashSet<int> SelectedSectionIds { get; set; } = [];
     }
 }

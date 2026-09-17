@@ -17,24 +17,12 @@
     var bloodGroups = new[] { "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-" };
     var religions = new[] { "Islam", "Christianity", "Hinduism", "Sikhism", "Other" };
     var categories = new[] { "New", "Old", "Orphan", "Staff Child", "Scholarship" };
-    var sections = new[] { "A", "B", "C", "D", "E", "F", "G", "H" };
     var concessions = new[] { "None", "Sibling", "Merit", "Staff", "Financial" };
 }
 
 <form asp-controller="Student" asp-action="Register" method="post" enctype="multipart/form-data" class="space-y-5">
     <div asp-validation-summary="ModelOnly"
          class="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3"></div>
-
-    <div class="flex items-center justify-between">
-        <h1 class="text-lg font-semibold text-gray-900">Student Admission</h1>
-        <button type="button"
-                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-            <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 15v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 4v12m0 0 4-4m-4 4-4-4" />
-            </svg>
-            Import Student
-        </button>
-    </div>
 
     @* ---------- Student Admission ---------- *@
     <section class="@sectionCls">
@@ -74,20 +62,21 @@
 
             <div>
                 <label asp-for="GradeId" class="@labelCls">Class <span class="text-red-500">*</span></label>
-                <select asp-for="GradeId" asp-items="Model.GradeOptions" class="@selectCls">
+                <select asp-for="GradeId" class="@selectCls" data-adm-class>
                     <option value="">Select</option>
+                    @foreach (var c in Model.ClassOptions)
+                    {
+                        <option value="@c.Id" data-sections="@string.Join(",", c.Sections)">@c.Name</option>
+                    }
                 </select>
                 <span asp-validation-for="GradeId" class="@errCls"></span>
             </div>
 
             <div>
                 <label asp-for="Section" class="@labelCls"></label>
-                <select asp-for="Section" class="@selectCls">
+                @* Options are filled from the selected class's linked sections (see script below). *@
+                <select asp-for="Section" class="@selectCls" data-adm-section data-selected="@Model.Section">
                     <option value="">Select</option>
-                    @foreach (var s in sections)
-                    {
-                        <option value="@s">@s</option>
-                    }
                 </select>
                 <span asp-validation-for="Section" class="@errCls"></span>
             </div>
@@ -397,16 +386,6 @@
         </div>
     </section>
 
-    @* ---------- Add More Details (placeholder, wired later) ---------- *@
-    <div class="rounded-lg bg-white border border-gray-200 shadow-sm px-4 py-3 border-t-2 border-t-brand-500 flex items-center justify-between">
-        <span class="text-sm font-medium text-gray-700">Add More Details</span>
-        <button type="button" class="text-gray-400 hover:text-gray-600" aria-label="Add more details">
-            <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m-7-7h14" />
-            </svg>
-        </button>
-    </div>
-
     <div class="flex items-center justify-end gap-3">
         <a asp-controller="Student" asp-action="Index"
            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
@@ -421,6 +400,20 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Section options follow the chosen class (its sections are in data-sections).
+        (function () {
+            const cls = document.querySelector('[data-adm-class]');
+            const sec = document.querySelector('[data-adm-section]');
+            if (!cls || !sec) return;
+            const chosen = sec.dataset.selected || '';
+            const fill = () => sec.innerHTML = '<option value="">Select</option>' +
+                (cls.selectedOptions[0]?.dataset.sections || '').split(',').filter(Boolean)
+                    .map(n => `<option${n === chosen ? ' selected' : ''}>${n}</option>`).join('');
+            cls.addEventListener('change', fill);
+            fill();
+        })();
+    </script>
     <script>
         // Show the chosen file name inside each drag-and-drop photo box.
         document.querySelectorAll('[data-photo-drop] input[type=file]').forEach(function (input) {

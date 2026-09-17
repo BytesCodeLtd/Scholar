@@ -13,13 +13,13 @@ namespace Scholar.Services
     public class AttendanceService(
         IRepository<Attendance> attendance,
         IRepository<Student> students,
-        IRepository<Grade> grades,
+        IRepository<InstituteClass> classes,
         IRepository<Institute> institutes,
         ITenantProvider tenant) : IAttendanceService
     {
         private readonly IRepository<Attendance> _attendance = attendance;
         private readonly IRepository<Student> _students = students;
-        private readonly IRepository<Grade> _grades = grades;
+        private readonly IRepository<InstituteClass> _classes = classes;
         private readonly IRepository<Institute> _institutes = institutes;
         private readonly ITenantProvider _tenant = tenant;
 
@@ -43,7 +43,7 @@ namespace Scholar.Services
             // Only build the roster once we know both the institute and the class.
             if (targetInstituteId is not null && gradeId is not null)
             {
-                IQueryable<Student> students = _students.Query().Where(s => s.IsActive && s.InstituteId == targetInstituteId && s.GradeId == gradeId);
+                IQueryable<Student> students = _students.Query().Where(s => s.IsActive && s.InstituteId == targetInstituteId && s.ClassId == gradeId);
 
                 if (model.Section is not null)
                 {
@@ -148,7 +148,7 @@ namespace Scholar.Services
 
             string? sec = string.IsNullOrWhiteSpace(section) ? null : section.Trim();
 
-            IQueryable<Student> studentsQuery = _students.Query().Where(s => s.IsActive && s.InstituteId == targetInstituteId && s.GradeId == gradeId);
+            IQueryable<Student> studentsQuery = _students.Query().Where(s => s.IsActive && s.InstituteId == targetInstituteId && s.ClassId == gradeId);
 
             if (sec is not null)
             {
@@ -187,11 +187,11 @@ namespace Scholar.Services
 
         private async Task PopulateOptionsAsync(AttendanceRosterViewModel model)
         {
-            model.GradeOptions = await _grades.Query()
-                                              .Where(g => g.IsActive)
-                                              .OrderBy(g => g.Name)
-                                              .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = g.Name })
-                                              .ToListAsync();
+            model.GradeOptions = await _classes.Query()
+                                               .Where(c => c.IsActive)
+                                               .OrderBy(c => c.Name)
+                                               .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = c.Name })
+                                               .ToListAsync();
 
             if (_tenant.IsSuperAdmin)
             {

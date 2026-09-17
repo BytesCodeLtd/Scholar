@@ -62,6 +62,18 @@
                             <span class="ms-3">Subject Group</span>
                         </a>
                     </li>
+                    @if (User.IsInRole(Roles.SuperAdmin) || User.IsInRole(Roles.InstituteAdmin))
+                    {
+                        <li>
+                            <a asp-controller="Student" asp-action="Promote"
+                               class="flex items-center w-full p-2 pl-6 text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100">
+                                <svg class="w-4 h-4 text-gray-400 group-hover:text-brand-600 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0-6 6m6-6 6 6" />
+                                </svg>
+                                <span class="ms-3">Promote Student</span>
+                            </a>
+                        </li>
+                    }
                 </ul>
             </li>
 

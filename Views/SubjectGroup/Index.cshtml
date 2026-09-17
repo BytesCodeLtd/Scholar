@@ -60,7 +60,7 @@
                     <option value="">Select class</option>
                     @foreach (var c in Model.ClassOptions)
                     {
-                        <option value="@c.Id" data-institute="@c.InstituteId">@c.Name</option>
+                        <option value="@c.Id" data-institute="@c.InstituteId" data-sections="@string.Join(",", c.SectionIds)">@c.Name</option>
                     }
                 </select>
             </div>
@@ -71,7 +71,7 @@
             <div class="@checkList">
                 @foreach (var s in Model.SectionOptions)
                 {
-                    <label data-sg-item data-institute="@s.InstituteId" class="@checkItem">
+                    <label data-sg-section data-section-id="@s.Id" class="@checkItem">
                         <input type="checkbox" name="sectionIds" value="@s.Id"
                                class="w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
                         @s.Name
@@ -85,7 +85,7 @@
             <div class="@checkList">
                 @foreach (var s in Model.SubjectOptions)
                 {
-                    <label data-sg-item data-institute="@s.InstituteId" class="@checkItem">
+                    <label data-sg-subject data-institute="@s.InstituteId" class="@checkItem">
                         <input type="checkbox" name="subjectIds" value="@s.Id"
                                class="w-4 h-4 text-brand-600 bg-gray-100 border-gray-300 rounded focus:ring-brand-500" />
                         @s.Name

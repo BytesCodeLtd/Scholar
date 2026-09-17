@@ -11,9 +11,9 @@ namespace Scholar.Models
 
         public Institute Institute { get; set; } = null!;
 
-        public int GradeId { get; set; }
+        public int? ClassId { get; set; }
 
-        public Grade Grade { get; set; } = null!;
+        public InstituteClass? Class { get; set; }
 
         // --- Admission -------------------------------------------------------
         [Display(Name = "Admission Number")]

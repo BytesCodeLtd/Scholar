@@ -38,11 +38,11 @@ namespace Scholar.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateOrUpdate(int? id, string name, int? sectionId)
+        public async Task<IActionResult> CreateOrUpdate(int? id, string name, int[] sectionIds)
         {
-            if (!await _classes.CreateOrUpdate(id, name, sectionId))
+            if (!await _classes.CreateOrUpdate(id, name, sectionIds ?? []))
             {
-                TempData["Error"] = "Class name and a section are required.";
+                TempData["Error"] = "Class name and at least one section (all from the same institute) are required.";
 
                 return id is null
                     ? RedirectToAction(nameof(Index))

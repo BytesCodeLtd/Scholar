@@ -88,9 +88,9 @@ namespace Scholar.Services
             if (id is int groupId)
             {
                 SubjectGroup? group = await _groups.Query()
-                    .Include(g => g.Sections)
-                    .Include(g => g.Subjects)
-                    .FirstOrDefaultAsync(g => g.Id == groupId && g.IsActive);
+                                                   .Include(g => g.Sections)
+                                                   .Include(g => g.Subjects)
+                                                   .FirstOrDefaultAsync(g => g.Id == groupId && g.IsActive);
 
                 if (group is null)
                 {
@@ -113,8 +113,7 @@ namespace Scholar.Services
             return model;
         }
 
-        public async Task<bool> CreateOrUpdate(int? id, string name, string? description, int? classId,
-                                               int[] sectionIds, int[] subjectIds, int? instituteId)
+        public async Task<bool> CreateOrUpdate(int? id, string name, string? description, int? classId, int[] sectionIds, int[] subjectIds, int? instituteId)
         {
             if (string.IsNullOrWhiteSpace(name) || classId is null)
             {
@@ -125,9 +124,9 @@ namespace Scholar.Services
             if (id is int groupId)
             {
                 SubjectGroup? group = await _groups.Query()
-                    .Include(g => g.Sections)
-                    .Include(g => g.Subjects)
-                    .FirstOrDefaultAsync(g => g.Id == groupId && g.IsActive);
+                                                   .Include(g => g.Sections)
+                                                   .Include(g => g.Subjects)
+                                                   .FirstOrDefaultAsync(g => g.Id == groupId && g.IsActive);
 
                 if (group is null)
                 {
@@ -188,25 +187,26 @@ namespace Scholar.Services
 
         public Task<bool> DeleteAsync(int id) => _groups.DeleteAsync(id);
 
-        /// <summary>The resolved, tenant-validated class/sections/subjects for a save.</summary>
         private sealed record Selection(InstituteClass Class, List<Section> Sections, List<InstituteSubject> Subjects);
 
-        /// <summary>Resolves and validates the class, sections and subjects against a single
-        /// institute. Returns null if the class is invalid or nothing is selected in either list.</summary>
         private async Task<Selection?> ResolveSelections(int instituteId, int classId, int[] sectionIds, int[] subjectIds)
         {
             InstituteClass? cls = await _classes.Query()
-                .FirstOrDefaultAsync(c => c.Id == classId && c.InstituteId == instituteId && c.IsActive);
+                                                .Include(c => c.Sections)
+                                                .FirstOrDefaultAsync(c => c.Id == classId && c.InstituteId == instituteId && c.IsActive);
 
-            List<Section> selSections = await _sections.Query()
-                .Where(s => sectionIds.Contains(s.Id) && s.InstituteId == instituteId && s.IsActive)
-                .ToListAsync();
+            if (cls is null)
+            {
+                return null;
+            }
+
+            List<Section> selSections = [.. cls.Sections.Where(s => sectionIds.Contains(s.Id) && s.IsActive)];
 
             List<InstituteSubject> selSubjects = await _subjects.Query()
-                .Where(s => subjectIds.Contains(s.Id) && s.InstituteId == instituteId && s.IsActive)
-                .ToListAsync();
+                                                                .Where(s => subjectIds.Contains(s.Id) && s.InstituteId == instituteId && s.IsActive)
+                                                                .ToListAsync();
 
-            if (cls is null || selSections.Count == 0 || selSubjects.Count == 0)
+            if (selSections.Count == 0 || selSubjects.Count == 0)
             {
                 return null;
             }
@@ -218,7 +218,13 @@ namespace Scholar.Services
             => await _classes.Query()
                              .Where(c => c.IsActive)
                              .OrderBy(c => c.Name)
-                             .Select(c => new SubjectGroupOption { Id = c.Id, Name = c.Name, InstituteId = c.InstituteId })
+                             .Select(c => new SubjectGroupOption
+                             {
+                                 Id = c.Id,
+                                 Name = c.Name,
+                                 InstituteId = c.InstituteId,
+                                 SectionIds = c.Sections.Select(s => s.Id).ToList()
+                             })
                              .ToListAsync();
 
         private async Task<IReadOnlyList<SubjectGroupOption>> GetSectionOptionsAsync()

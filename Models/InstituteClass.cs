@@ -1,10 +1,5 @@
 namespace Scholar.Models
 {
-    /// <summary>
-    /// A class defined by an institute, belonging to a <see cref="Section"/>.
-    /// Institute-owned (tenant) data; its <see cref="InstituteId"/> is derived from
-    /// the parent section so the two always agree. Stored in the "Class" table.
-    /// </summary>
     public class InstituteClass : IAuditableEntity, ITenantEntity
     {
         public int Id { get; set; }
@@ -13,9 +8,7 @@ namespace Scholar.Models
 
         public Institute Institute { get; set; } = null!;
 
-        public int SectionId { get; set; }
-
-        public Section Section { get; set; } = null!;
+        public ICollection<Section> Sections { get; set; } = [];
 
         public string Name { get; set; } = string.Empty;
 

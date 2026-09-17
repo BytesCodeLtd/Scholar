@@ -112,6 +112,12 @@ namespace Scholar.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        public IActionResult Promote()
+        {
+            return View();
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)

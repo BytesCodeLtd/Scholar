@@ -63,15 +63,12 @@ namespace Scholar.Data
             builder.Entity<Teacher>()
                 .HasIndex(t => new { t.UserId, t.SubjectId, t.GradeId }).IsUnique();
 
-            // Students belong to an institute (removing an institute removes its
-            // students). GradeId is NoAction to avoid a second cascade path.
-            // Gender is stored as a readable string rather than an int.
             builder.Entity<Student>()
                 .HasOne(s => s.Institute).WithMany()
                 .HasForeignKey(s => s.InstituteId).OnDelete(DeleteBehavior.Cascade);
             builder.Entity<Student>()
-                .HasOne(s => s.Grade).WithMany()
-                .HasForeignKey(s => s.GradeId).OnDelete(DeleteBehavior.NoAction);
+                .HasOne(s => s.Class).WithMany()
+                .HasForeignKey(s => s.ClassId).OnDelete(DeleteBehavior.NoAction);
             builder.Entity<Student>()
                 .Property(s => s.Gender).HasConversion<string>().HasMaxLength(20);
             builder.Entity<Student>()
@@ -192,20 +189,24 @@ namespace Scholar.Data
             builder.Entity<Section>()
                 .Property(s => s.Name).IsRequired().HasMaxLength(50);
 
-            // Classes are institute-owned and belong to a section. Institute link
-            // cascades; the section link is Restrict to avoid a second cascade path.
-            // Stored in the singular "Class" table.
             builder.Entity<InstituteClass>().ToTable("Class");
             builder.Entity<InstituteClass>()
                 .HasOne(c => c.Institute).WithMany()
                 .HasForeignKey(c => c.InstituteId).OnDelete(DeleteBehavior.Cascade);
             builder.Entity<InstituteClass>()
-                .HasOne(c => c.Section).WithMany()
-                .HasForeignKey(c => c.SectionId).OnDelete(DeleteBehavior.Restrict);
-            builder.Entity<InstituteClass>()
                 .HasIndex(c => c.InstituteId);
             builder.Entity<InstituteClass>()
                 .Property(c => c.Name).IsRequired().HasMaxLength(50);
+
+            // Class <-> sections join. The class side cascades (deleting a class clears its
+            // join rows); the section side is Restrict to avoid multiple cascade paths back
+            // to Institute (which already cascades through the class).
+            builder.Entity<InstituteClass>()
+                .HasMany(c => c.Sections).WithMany()
+                .UsingEntity(
+                    "ClassSection",
+                    r => r.HasOne(typeof(Section)).WithMany().HasForeignKey("SectionId").OnDelete(DeleteBehavior.Restrict),
+                    l => l.HasOne(typeof(InstituteClass)).WithMany().HasForeignKey("ClassId").OnDelete(DeleteBehavior.Cascade));
 
             // Subjects are institute-owned; removed with their institute. Type is stored
             // as a readable string rather than an int.

@@ -80,6 +80,8 @@ builder.Services.AddScoped<Scholar.Services.ITestService, Scholar.Services.TestS
 builder.Services.AddScoped<Scholar.Services.IAttendanceService, Scholar.Services.AttendanceService>();
 builder.Services.AddScoped<Scholar.Services.ISectionService, Scholar.Services.SectionService>();
 builder.Services.AddScoped<Scholar.Services.IClassService, Scholar.Services.ClassService>();
+builder.Services.AddScoped<Scholar.Services.IInstituteSubjectService, Scholar.Services.InstituteSubjectService>();
+builder.Services.AddScoped<Scholar.Services.ISubjectGroupService, Scholar.Services.SubjectGroupService>();
 builder.Services.AddScoped<Scholar.Services.IDashboardService, Scholar.Services.DashboardService>();
 builder.Services.AddScoped<Scholar.Services.IPastPaperService, Scholar.Services.PastPaperService>();
 builder.Services.AddScoped<Scholar.Services.ITeacherService, Scholar.Services.TeacherService>();

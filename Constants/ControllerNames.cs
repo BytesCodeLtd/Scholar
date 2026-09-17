@@ -17,5 +17,7 @@ namespace Scholar.Constants
         public const string Fees = "Fees";
         public const string Section = "Section";
         public const string Class = "Class";
+        public const string InstituteSubject = "InstituteSubject";
+        public const string SubjectGroup = "SubjectGroup";
     }
 }

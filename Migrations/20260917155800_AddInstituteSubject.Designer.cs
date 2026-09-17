@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Scholar.Data;
 
@@ -11,9 +12,11 @@ using Scholar.Data;
 namespace Scholar.Migrations
 {
     [DbContext(typeof(ScholarDbContext))]
-    partial class ScholarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917155800_AddInstituteSubject")]
+    partial class AddInstituteSubject
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1122,53 +1125,6 @@ namespace Scholar.Migrations
                     b.ToTable("Subjects");
                 });
 
-            modelBuilder.Entity("Scholar.Models.SubjectGroup", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ClassId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int>("InstituteId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ClassId");
-
-                    b.HasIndex("InstituteId");
-
-                    b.ToTable("SubjectGroups");
-                });
-
             modelBuilder.Entity("Scholar.Models.Teacher", b =>
                 {
                     b.Property<int>("Id")
@@ -1521,36 +1477,6 @@ namespace Scholar.Migrations
                     b.ToTable("Topics");
                 });
 
-            modelBuilder.Entity("SubjectGroupSection", b =>
-                {
-                    b.Property<int>("SectionId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SubjectGroupId")
-                        .HasColumnType("int");
-
-                    b.HasKey("SectionId", "SubjectGroupId");
-
-                    b.HasIndex("SubjectGroupId");
-
-                    b.ToTable("SubjectGroupSection");
-                });
-
-            modelBuilder.Entity("SubjectGroupSubject", b =>
-                {
-                    b.Property<int>("InstituteSubjectId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SubjectGroupId")
-                        .HasColumnType("int");
-
-                    b.HasKey("InstituteSubjectId", "SubjectGroupId");
-
-                    b.HasIndex("SubjectGroupId");
-
-                    b.ToTable("SubjectGroupSubject");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1820,25 +1746,6 @@ namespace Scholar.Migrations
                     b.Navigation("Grade");
                 });
 
-            modelBuilder.Entity("Scholar.Models.SubjectGroup", b =>
-                {
-                    b.HasOne("Scholar.Models.InstituteClass", "Class")
-                        .WithMany()
-                        .HasForeignKey("ClassId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Scholar.Models.Institute", "Institute")
-                        .WithMany()
-                        .HasForeignKey("InstituteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Class");
-
-                    b.Navigation("Institute");
-                });
-
             modelBuilder.Entity("Scholar.Models.Teacher", b =>
                 {
                     b.HasOne("Scholar.Models.Grade", "Grade")
@@ -1942,36 +1849,6 @@ namespace Scholar.Migrations
                         .IsRequired();
 
                     b.Navigation("Chapter");
-                });
-
-            modelBuilder.Entity("SubjectGroupSection", b =>
-                {
-                    b.HasOne("Scholar.Models.Section", null)
-                        .WithMany()
-                        .HasForeignKey("SectionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Scholar.Models.SubjectGroup", null)
-                        .WithMany()
-                        .HasForeignKey("SubjectGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("SubjectGroupSubject", b =>
-                {
-                    b.HasOne("Scholar.Models.InstituteSubject", null)
-                        .WithMany()
-                        .HasForeignKey("InstituteSubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Scholar.Models.SubjectGroup", null)
-                        .WithMany()
-                        .HasForeignKey("SubjectGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Scholar.Models.ApplicationUser", b =>

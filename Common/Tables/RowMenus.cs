@@ -79,12 +79,26 @@ namespace Scholar.Common.Tables
 
         public static RowMenuItem[] Section() =>
         [
-            Edit(ControllerNames.Section)
+            Edit(ControllerNames.Section),
+            Delete(ControllerNames.Section)
         ];
 
         public static RowMenuItem[] Class() =>
         [
-            Edit(ControllerNames.Class)
+            Edit(ControllerNames.Class),
+            Delete(ControllerNames.Class)
+        ];
+
+        public static RowMenuItem[] Subject() =>
+        [
+            Edit(ControllerNames.InstituteSubject),
+            Delete(ControllerNames.InstituteSubject)
+        ];
+
+        public static RowMenuItem[] SubjectGroup() =>
+        [
+            Edit(ControllerNames.SubjectGroup),
+            Delete(ControllerNames.SubjectGroup)
         ];
 
         public static RowMenuItem[] Attendance(string date, int gradeId, string? section, int? instituteId, int page)

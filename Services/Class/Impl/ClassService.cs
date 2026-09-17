@@ -126,7 +126,8 @@ namespace Scholar.Services
             return true;
         }
 
-        // Sections available as class parents (own institute's, or all for a SuperAdmin).
+        public Task<bool> DeleteAsync(int id) => _classes.DeleteAsync(id);
+
         private async Task<IReadOnlyList<SelectListItem>> GetSectionOptionsAsync()
             => await _sections.Query()
                               .Where(s => s.IsActive)

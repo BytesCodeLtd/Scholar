@@ -3,40 +3,45 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Scholar.Common.Identity;
 using Scholar.Common.Paging;
+using Scholar.Enums;
 using Scholar.Models;
 using Scholar.Models.ViewModels;
 using Scholar.Repositories;
 
 namespace Scholar.Services
 {
-    public class SectionService(
-        IRepository<Section> sections,
+    public class InstituteSubjectService(
+        IRepository<InstituteSubject> subjects,
         IRepository<Institute> institutes,
-        ITenantProvider tenant) : ISectionService
+        ITenantProvider tenant) : IInstituteSubjectService
     {
-        private readonly IRepository<Section> _sections = sections;
+        private readonly IRepository<InstituteSubject> _subjects = subjects;
         private readonly IRepository<Institute> _institutes = institutes;
         private readonly ITenantProvider _tenant = tenant;
 
-        public async Task<SectionIndexViewModel> GetIndexAsync(PageParameters tableParams)
+        public async Task<InstituteSubjectIndexViewModel> GetIndexAsync(PageParameters tableParams)
         {
-            SectionIndexViewModel model = new()
+            InstituteSubjectIndexViewModel model = new()
             {
                 IsSuperAdmin = _tenant.IsSuperAdmin
             };
 
-            IQueryable<Section> query = _sections.Query();
+            IQueryable<InstituteSubject> query = _subjects.Query();
 
             if (!string.IsNullOrWhiteSpace(tableParams.Search))
             {
                 string term = tableParams.Search;
-                query = query.Where(s => s.Name.Contains(term) || s.Institute.Name.Contains(term));
+                query = query.Where(s => s.Name.Contains(term)
+                                      || s.Code.Contains(term)
+                                      || s.Institute.Name.Contains(term));
             }
 
-            IQueryable<SectionRow> rows = query.Select(s => new SectionRow
+            IQueryable<InstituteSubjectRow> rows = query.Select(s => new InstituteSubjectRow
             {
                 Id = s.Id,
                 Name = s.Name,
+                Code = s.Code,
+                Type = s.Type,
                 InstituteName = s.Institute.Name,
                 IsActive = s.IsActive
             });
@@ -49,7 +54,7 @@ namespace Scholar.Services
             }
             rows = rows.OrderBy(orderBy);
 
-            model.Sections = await _sections.GetPagedAsync(rows, tableParams.Page, tableParams.PageSize);
+            model.Subjects = await _subjects.GetPagedAsync(rows, tableParams.Page, tableParams.PageSize);
 
             if (_tenant.IsSuperAdmin)
             {
@@ -59,21 +64,23 @@ namespace Scholar.Services
             return model;
         }
 
-        public async Task<SectionFormViewModel?> GetFormAsync(int? id)
+        public async Task<InstituteSubjectFormViewModel?> GetFormAsync(int? id)
         {
-            SectionFormViewModel model = new() { IsSuperAdmin = _tenant.IsSuperAdmin };
+            InstituteSubjectFormViewModel model = new() { IsSuperAdmin = _tenant.IsSuperAdmin };
 
-            if (id is int sectionId)
+            if (id is int subjectId)
             {
-                Section? section = await _sections.Query().FirstOrDefaultAsync(s => s.Id == sectionId && s.IsActive);
+                InstituteSubject? subject = await _subjects.Query().FirstOrDefaultAsync(s => s.Id == subjectId && s.IsActive);
 
-                if (section is null)
+                if (subject is null)
                 {
                     return null;
                 }
 
-                model.Id = section.Id;
-                model.Name = section.Name;
+                model.Id = subject.Id;
+                model.Name = subject.Name;
+                model.Code = subject.Code;
+                model.Type = subject.Type;
             }
             else if (_tenant.IsSuperAdmin)
             {
@@ -83,27 +90,29 @@ namespace Scholar.Services
             return model;
         }
 
-        public async Task<bool> CreateOrUpdate(int? id, string name, int? instituteId)
+        public async Task<bool> CreateOrUpdate(int? id, string name, string code, SubjectType type, int? instituteId)
         {
-            if (string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(code))
             {
                 return false;
             }
 
             // Update path: an id was supplied.
-            if (id is int sectionId)
+            if (id is int subjectId)
             {
-                Section? section = await _sections.Query().FirstOrDefaultAsync(s => s.Id == sectionId && s.IsActive);
+                InstituteSubject? subject = await _subjects.Query().FirstOrDefaultAsync(s => s.Id == subjectId && s.IsActive);
 
-                if (section is null)
+                if (subject is null)
                 {
                     return false;
                 }
 
-                section.Name = name.Trim();
+                subject.Name = name.Trim();
+                subject.Code = code.Trim();
+                subject.Type = type;
 
-                _sections.Update(section);
-                await _sections.SaveChangesAsync();
+                _subjects.Update(subject);
+                await _subjects.SaveChangesAsync();
 
                 return true;
             }
@@ -115,18 +124,20 @@ namespace Scholar.Services
                 return false;
             }
 
-            await _sections.AddAsync(new Section
+            await _subjects.AddAsync(new InstituteSubject
             {
                 Name = name.Trim(),
+                Code = code.Trim(),
+                Type = type,
                 InstituteId = targetInstituteId.Value
             });
 
-            await _sections.SaveChangesAsync();
+            await _subjects.SaveChangesAsync();
 
             return true;
         }
 
-        public Task<bool> DeleteAsync(int id) => _sections.DeleteAsync(id);
+        public Task<bool> DeleteAsync(int id) => _subjects.DeleteAsync(id);
 
         private async Task<IReadOnlyList<SelectListItem>> GetInstituteOptionsAsync()
             => await _institutes.Query()

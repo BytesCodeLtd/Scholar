@@ -45,13 +45,22 @@
                         </a>
                     </li>
                     <li>
-                        <span aria-disabled="true" title="Coming soon"
-                              class="flex items-center w-full p-2 pl-6 rounded-lg text-gray-400 cursor-not-allowed opacity-60 select-none">
-                            <svg class="w-4 h-4 text-gray-300 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <a asp-controller="InstituteSubject" asp-action="Index"
+                           class="flex items-center w-full p-2 pl-6 text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100">
+                            <svg class="w-4 h-4 text-gray-400 group-hover:text-brand-600 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                             </svg>
                             <span class="ms-3">Subject</span>
-                        </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="SubjectGroup" asp-action="Index"
+                           class="flex items-center w-full p-2 pl-6 text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100">
+                            <svg class="w-4 h-4 text-gray-400 group-hover:text-brand-600 shrink-0" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-1M4 10a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8Z" />
+                            </svg>
+                            <span class="ms-3">Subject Group</span>
+                        </a>
                     </li>
                 </ul>
             </li>
